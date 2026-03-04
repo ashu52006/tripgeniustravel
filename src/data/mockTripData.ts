@@ -97,9 +97,9 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
           entryFee: Math.round((150 + i * 30) * (isIndia ? 1 : 0.5)),
           timeRequired: '2 hours',
           distanceFromPrevious: `${4 + i} km`,
-          crowdLevel: (i % 2 === 0 ? 'low' : 'high') as const,
+          crowdLevel: i % 2 === 0 ? 'low' as const : 'high' as const,
           weatherSuitability: 'Clear weather ideal',
-          priority: (i % 3 === 0 ? 'must-visit' : 'recommended') as const,
+          priority: i % 3 === 0 ? 'must-visit' as const : 'recommended' as const,
           category: 'activity' as const,
         },
         {
