@@ -2,3 +2,6 @@ project_id = "luzjxgnrzvvkrmdahzzv"
 
 [functions.generate-trip]
 verify_jwt = false
+
+[functions.generate-budget-plans]
+verify_jwt = false
