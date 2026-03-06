@@ -9,17 +9,25 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { destination, days, travelers, userBudget, currency, style, pace, startDate } = await req.json();
+    const { origin, destination, days, travelers, userBudget, currency, homeCurrency, homeCurrencyCode, style, pace, startDate } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `You are an expert travel planner. Create a detailed ${days}-day trip itinerary for ${travelers} traveler(s) to ${destination}.
+    const prompt = `You are an expert travel planner. Create a detailed ${days}-day trip itinerary for ${travelers} traveler(s) from ${origin} to ${destination}.
 
 Travel style: ${style} | Pace: ${pace} | Start date: ${startDate}
-User budget: ${currency}${userBudget} (total for all travelers, all days)
+User budget: ${homeCurrency || currency}${userBudget} (total for all travelers, all days)
+Destination currency: ${currency}
+Home currency: ${homeCurrency || currency} (${homeCurrencyCode || ''})
 
-IMPORTANT: Plan the trip to FIT WITHIN the user's budget of ${currency}${userBudget}. Optimize costs to stay within budget while maximizing experience.
+CRITICAL REQUIREMENTS:
+1. Itinerary MUST start with flights from ${origin} to ${destination} on Day 1
+2. Itinerary MUST end with return flights from ${destination} to ${origin} on the last day
+3. Every place must include distance from previous place AND estimated taxi/auto fare
+4. Show entry fees in BOTH destination currency (${currency}) and home currency (${homeCurrency || currency})
+5. Include a Google Maps search URL for each place as "mapUrl"
+6. Include an image search URL for each place as "imageUrl"
 
 Return a JSON object with this EXACT structure (no markdown, no code blocks, just raw JSON):
 {
@@ -27,22 +35,47 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
     {
       "day": 1,
       "date": "${startDate}",
-      "title": "Arrival & First Impressions",
+      "title": "Arrival in ${destination}",
       "places": [
         {
           "id": "d1p1",
+          "name": "Flight: ${origin} to ${destination}",
+          "description": "Depart from ${origin}",
+          "whyRecommended": "Starting your journey",
+          "startTime": "06:00",
+          "endTime": "09:00",
+          "entryFee": 0,
+          "entryFeeHome": 0,
+          "timeRequired": "3 hours",
+          "distanceFromPrevious": "Starting point",
+          "taxiFare": "${currency}0",
+          "taxiFareHome": "${homeCurrency || currency}0",
+          "crowdLevel": "medium",
+          "weatherSuitability": "Any",
+          "priority": "must-visit",
+          "category": "flight",
+          "imageUrl": "https://source.unsplash.com/400x300/?airport",
+          "mapUrl": "https://www.google.com/maps/search/${destination}+airport"
+        },
+        {
+          "id": "d1p2",
           "name": "Place Name",
           "description": "Brief description",
           "whyRecommended": "Why visit this place",
-          "startTime": "09:00",
-          "endTime": "11:00",
-          "entryFee": 0,
+          "startTime": "10:00",
+          "endTime": "12:00",
+          "entryFee": 500,
+          "entryFeeHome": 500,
           "timeRequired": "2 hours",
-          "distanceFromPrevious": "Start point",
+          "distanceFromPrevious": "15 km from airport",
+          "taxiFare": "${currency}300",
+          "taxiFareHome": "${homeCurrency || currency}300",
           "crowdLevel": "low",
           "weatherSuitability": "All weather",
           "priority": "must-visit",
-          "category": "attraction"
+          "category": "attraction",
+          "imageUrl": "https://source.unsplash.com/400x300/?place+name",
+          "mapUrl": "https://www.google.com/maps/search/place+name+${destination}"
         }
       ],
       "cost": {
@@ -50,7 +83,8 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
         "entryFees": 200,
         "food": 800,
         "activities": 300,
-        "total": 1800
+        "total": 1800,
+        "totalHome": 1800
       }
     }
   ],
@@ -60,6 +94,7 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
     "comfortableBudget": 0,
     "idealBudget": 0,
     "currency": "${currency}",
+    "homeCurrency": "${homeCurrency || currency}",
     "tips": ["tip1", "tip2", "tip3"],
     "breakdown": [
       { "category": "Accommodation", "userBudget": 0, "recommended": 0 },
@@ -74,6 +109,7 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
       "id": "h1",
       "name": "Hotel Name",
       "pricePerNight": 2000,
+      "pricePerNightHome": 2000,
       "distanceToAttractions": "1.5 km",
       "category": "budget",
       "safetyRating": 4,
@@ -90,6 +126,23 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
       "arrivalTime": "09:00",
       "duration": "3h 00m",
       "price": 5000,
+      "priceHome": 5000,
+      "from": "${origin}",
+      "to": "${destination}",
+      "tag": "cheapest"
+    }
+  ],
+  "returnFlights": [
+    {
+      "id": "rf1",
+      "airline": "Airline Name",
+      "departureTime": "18:00",
+      "arrivalTime": "21:00",
+      "duration": "3h 00m",
+      "price": 5000,
+      "priceHome": 5000,
+      "from": "${destination}",
+      "to": "${origin}",
       "tag": "cheapest"
     }
   ]
@@ -97,20 +150,16 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, jus
 
 Rules:
 - Use REAL place names, REAL restaurants, REAL hotels that exist in ${destination}
-- All prices must be in ${currency} and be REALISTIC current prices
+- All prices in destination currency (${currency}) with home currency (${homeCurrency || currency}) equivalents
 - Include 5-7 places per day based on ${pace} pace
-- Each day should have breakfast, lunch, dinner spots plus attractions
-- Priority must be: "must-visit", "recommended", or "optional"
-- Category must be: "attraction", "food", "transport", "rest", "activity", or "viewpoint"
-- crowdLevel must be: "low", "medium", or "high"
-- Hotel categories: "budget", "comfort", or "premium"
-- Flight tags: "cheapest", "balanced", or "fastest"
-- Hotel tags: "best-value", "budget-saver", or "comfort-pick"
-- The total trip cost should be WITHIN or close to the user's budget of ${currency}${userBudget}
-- Provide 3 hotels and 3 flight options
-- Budget breakdown should show realistic allocation
-- minimumBudget < comfortableBudget < idealBudget
-- Tips should be practical money-saving advice for ${destination}`;
+- CRITICAL: Each place must have distanceFromPrevious with REAL km distance AND taxiFare with estimated taxi/auto cost
+- Places should be CONNECTED — ordered by proximity so travel between them is efficient
+- Day 1 starts with arrival flight, last day ends with departure flight
+- Provide 3 outbound flights (${origin} to ${destination}) and 3 return flights (${destination} to ${origin})
+- Provide 3 hotels near the main attractions
+- Total trip cost should be WITHIN the user budget of ${homeCurrency || currency}${userBudget}
+- Each place should have a Google Maps search URL as mapUrl
+- Use Unsplash image URLs for imageUrl (https://source.unsplash.com/400x300/?search+terms)`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -130,51 +179,26 @@ Rules:
     if (!response.ok) {
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      
-      return new Response(JSON.stringify({ error: "Failed to generate trip plan" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted. Please add credits." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Failed to generate trip plan" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const data = await response.json();
     let content = data.choices?.[0]?.message?.content || "";
-    
-    // Strip markdown code blocks if present
     content = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
     let tripPlan;
     try {
       tripPlan = JSON.parse(content);
     } catch (parseError) {
       console.error("Failed to parse AI response:", content.substring(0, 500));
-      return new Response(JSON.stringify({ error: "Failed to parse trip plan. Please try again." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "Failed to parse trip plan. Please try again." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify(tripPlan), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify(tripPlan), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-trip error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

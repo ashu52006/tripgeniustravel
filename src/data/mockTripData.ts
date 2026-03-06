@@ -349,9 +349,9 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
       { id: 'h3', name: `${setup.destination} Grand Resort`, pricePerNight: Math.round(baseCosts.hotel * 2), distanceToAttractions: '2.0 km', category: 'premium', safetyRating: 4.8, guestRating: 4.7, whyItFits: 'Premium amenities with pool and spa', tag: 'comfort-pick' },
     ],
     flights: [
-      { id: 'f1', airline: 'Budget Air', departureTime: '06:00', arrivalTime: '08:30', duration: '2h 30m', price: Math.round(baseCosts.flight * 0.7), tag: 'cheapest' },
-      { id: 'f2', airline: 'National Carrier', departureTime: '10:00', arrivalTime: '12:15', duration: '2h 15m', price: baseCosts.flight, tag: 'balanced' },
-      { id: 'f3', airline: 'Premium Airlines', departureTime: '14:00', arrivalTime: '15:45', duration: '1h 45m', price: Math.round(baseCosts.flight * 1.4), tag: 'fastest' },
+      { id: 'f1', airline: 'Budget Air', departureTime: '06:00', arrivalTime: '08:30', duration: '2h 30m', price: Math.round(baseCosts.flight * 0.7), tag: 'cheapest', from: setup.origin || 'Origin', to: setup.destination },
+      { id: 'f2', airline: 'National Carrier', departureTime: '10:00', arrivalTime: '12:15', duration: '2h 15m', price: baseCosts.flight, tag: 'balanced', from: setup.origin || 'Origin', to: setup.destination },
+      { id: 'f3', airline: 'Premium Airlines', departureTime: '14:00', arrivalTime: '15:45', duration: '1h 45m', price: Math.round(baseCosts.flight * 1.4), tag: 'fastest', from: setup.origin || 'Origin', to: setup.destination },
     ],
   };
 }
