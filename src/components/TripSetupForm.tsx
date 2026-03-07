@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Calendar, Users, Compass, Gauge, ArrowRight, Plane, Navigation } from 'lucide-react';
+import { format, differenceInDays, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { TripSetup, TravelStyle, TravelPace, UserRegion, regionCurrencies } from '@/types/trip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getCurrencyForDestination } from '@/lib/currencies';
+import { cn } from '@/lib/utils';
 
 const styles: { value: TravelStyle; labelKey: string; icon: string }[] = [
   { value: 'budget', labelKey: 'budget_label', icon: '💰' },
@@ -34,20 +38,25 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
 
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
-  const [days, setDays] = useState(3);
-  const [startDate, setStartDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [travelers, setTravelers] = useState(2);
   const [style, setStyle] = useState<TravelStyle>('balanced');
   const [pace, setPace] = useState<TravelPace>('normal');
 
   const destCurrency = destination ? getCurrencyForDestination(destination) : homeCurrency;
 
+  const days = startDate && endDate ? differenceInDays(endDate, startDate) + 1 : 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!origin || !destination || !startDate) return;
+    if (!origin || !destination || !startDate || !endDate || days < 1) return;
     const setup: TripSetup = {
-      origin, destination, days, startDate, travelers,
-      userBudget: 0, // Will be set after budget selection
+      origin, destination, days,
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
+      travelers,
+      userBudget: 0,
       currency: destCurrency.symbol,
       homeCurrency: homeCurrency.symbol,
       homeRegion,
@@ -64,9 +73,9 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
       className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
     >
       {/* Background */}
-      <div className="fixed inset-0 pointer-events-none">
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-ocean" />
-        {[...Array(3)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full opacity-10"
@@ -81,6 +90,13 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             transition={{ duration: 4 + i * 2, repeat: Infinity }}
           />
         ))}
+        {/* Water flow effect */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 h-32"
+          style={{ background: 'linear-gradient(to right, hsl(200 100% 55% / 0.1), hsl(170 80% 45% / 0.1), hsl(200 100% 55% / 0.1))' }}
+          animate={{ x: ['-20%', '20%', '-20%'] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+        />
       </div>
 
       <motion.div
@@ -90,10 +106,7 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
         className="relative z-10 w-full max-w-2xl"
       >
         <div className="text-center mb-8">
-          <motion.div
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
+          <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 2, repeat: Infinity }}>
             <Plane className="w-12 h-12 text-primary mx-auto mb-3" />
           </motion.div>
           <h1 className="text-3xl md:text-4xl font-display font-bold text-gradient-hero mb-2">
@@ -142,32 +155,86 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
               className="glass-highlight rounded-xl p-3 text-center text-sm text-muted-foreground"
             >
               💱 Destination currency: <span className="text-primary font-semibold">{destCurrency.symbol} {destCurrency.code}</span>
-              {' '}• Prices shown in both {destCurrency.code} & {homeCurrency.code}
+              {' '}• All prices shown in both {homeCurrency.code} & {destCurrency.code}
             </motion.div>
           )}
 
-          {/* Days & Date */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Start Date & End Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
                 <Calendar className="w-4 h-4 text-primary" />
-                {t('tripDuration')}
+                Start Date
               </Label>
-              <div className="flex items-center gap-3">
-                <Button type="button" variant="outline" size="icon" onClick={() => setDays(Math.max(1, days - 1))} className="h-12 w-12 rounded-xl">-</Button>
-                <span className="text-2xl font-display font-bold text-foreground w-16 text-center">{days}</span>
-                <Button type="button" variant="outline" size="icon" onClick={() => setDays(Math.min(90, days + 1))} className="h-12 w-12 rounded-xl">+</Button>
-                <span className="text-muted-foreground">{t('days')}</span>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-12 justify-start text-left font-normal bg-secondary/50 border-border rounded-xl",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : "Pick start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => {
+                      setStartDate(date);
+                      if (date && endDate && date > endDate) setEndDate(undefined);
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
                 <Calendar className="w-4 h-4 text-primary" />
-                {t('startDate')}
+                End Date
               </Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="h-12 bg-secondary/50 border-border rounded-xl" required />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-12 justify-start text-left font-normal bg-secondary/50 border-border rounded-xl",
+                      !endDate && "text-muted-foreground"
+                    )}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "PPP") : "Pick end date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    disabled={(date) => date < (startDate || new Date())}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
+
+          {days > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="glass-highlight rounded-xl p-3 text-center text-sm text-primary font-semibold"
+            >
+              ✈️ Trip Duration: {days} {days === 1 ? 'day' : 'days'}
+            </motion.div>
+          )}
 
           {/* Travelers */}
           <div className="space-y-2">
@@ -237,7 +304,12 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             <Button type="button" variant="outline" onClick={onBack} className="rounded-xl h-14">
               Back
             </Button>
-            <Button type="submit" size="lg" className="flex-1 h-14 text-lg bg-gradient-hero border-0 text-primary-foreground font-semibold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!origin || !destination || !startDate || !endDate || days < 1}
+              className="flex-1 h-14 text-lg bg-gradient-hero border-0 text-primary-foreground font-semibold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all"
+            >
               <Plane className="w-5 h-5" />
               Check Budget Options
               <ArrowRight className="w-5 h-5" />

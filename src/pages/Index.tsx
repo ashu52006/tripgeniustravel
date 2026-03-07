@@ -11,23 +11,38 @@ import DayItinerary from '@/components/DayItinerary';
 import BudgetIntelligence from '@/components/BudgetIntelligence';
 import TripDashboard from '@/components/TripDashboard';
 import AuthButton from '@/components/AuthButton';
+import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
 import { TripSetup, TripPlan, UserRegion, regionCurrencies } from '@/types/trip';
 import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'region' | 'setup' | 'budget' | 'loading' | 'plan';
+type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan';
 type Tab = 'dashboard' | 'itinerary' | 'budget';
 
 const Index = () => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [step, setStep] = useState<AppStep>('landing');
   const [homeRegion, setHomeRegion] = useState<UserRegion>('india');
   const [tripSetup, setTripSetup] = useState<TripSetup | null>(null);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+
+  const handleGetStarted = () => {
+    if (user) {
+      setStep('region');
+    } else {
+      setStep('auth');
+    }
+  };
+
+  const handleAuthSuccess = () => {
+    setStep('region');
+  };
 
   const handleRegionSelect = (region: UserRegion) => {
     setHomeRegion(region);
@@ -167,7 +182,11 @@ const Index = () => {
       <main className={step === 'plan' ? 'max-w-5xl mx-auto px-4 py-8 pt-28' : ''}>
         <AnimatePresence mode="wait">
           {step === 'landing' && (
-            <LandingPage key="landing" onGetStarted={() => setStep('region')} />
+            <LandingPage key="landing" onGetStarted={handleGetStarted} />
+          )}
+
+          {step === 'auth' && (
+            <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />
           )}
 
           {step === 'region' && (

@@ -123,7 +123,6 @@ function findDestination(input: string): DestinationData {
     if (lower.includes(key)) return data;
   }
 
-  // Fuzzy match country/region to a city
   const countryMap: Record<string, string> = {
     france: 'paris', italy: 'rome', japan: 'tokyo', thailand: 'bangkok',
     india: 'delhi', indonesia: 'bali', uae: 'dubai', uk: 'london',
@@ -135,7 +134,6 @@ function findDestination(input: string): DestinationData {
     if (lower.includes(country)) return destinations[city];
   }
 
-  // Default: generate a generic international destination using the input name
   return {
     attractions: [
       `${input} Central Monument`, `${input} National Museum`, `${input} Old Town Square`,
@@ -213,7 +211,7 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
           id: `d${i + 1}-p2`,
           name: attraction,
           description: `One of the most iconic landmarks in ${setup.destination}`,
-          whyRecommended: 'Best visited in the morning when crowds are minimal and light is perfect for photos',
+          whyRecommended: 'Best visited in the morning when crowds are minimal',
           startTime: '09:30',
           endTime: '11:30',
           entryFee: Math.round(baseCosts.entryFee + i * 50 * dest.costMultiplier),
@@ -228,7 +226,7 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
           id: `d${i + 1}-p3`,
           name: 'Travel & Rest',
           description: 'Commute to next destination with a short break',
-          whyRecommended: 'Avoid the midday heat and recharge for the afternoon',
+          whyRecommended: 'Avoid the midday heat and recharge',
           startTime: '12:00',
           endTime: '13:00',
           entryFee: 0,
@@ -273,7 +271,7 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
           id: `d${i + 1}-p6`,
           name: sunsetSpot,
           description: `Stunning sunset views in ${setup.destination}`,
-          whyRecommended: 'The golden hour here is legendary — arrive 30 min early for best spots',
+          whyRecommended: 'The golden hour here is legendary',
           startTime: '18:00',
           endTime: '19:30',
           entryFee: 0,
@@ -288,7 +286,7 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
           id: `d${i + 1}-p7`,
           name: 'Dinner & Evening Leisure',
           description: 'Wind down with dinner and explore the evening scene',
-          whyRecommended: `Experience ${setup.destination}'s nightlife and local dinner culture`,
+          whyRecommended: `Experience ${setup.destination}'s nightlife`,
           startTime: '20:00',
           endTime: '22:00',
           entryFee: 0,
@@ -328,6 +326,7 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
       comfortableBudget: Math.round(fullTrip),
       idealBudget: Math.round(fullTrip * 1.2),
       currency: curr,
+      homeCurrency: setup.homeCurrency,
       tips: [
         `Reduce hotel category to save ${curr}${Math.round(baseCosts.hotel * 0.3 * setup.days).toLocaleString()}`,
         `Skip optional activities on Day ${Math.min(3, setup.days)} to save ${curr}${Math.round(baseCosts.activity).toLocaleString()}`,
@@ -344,14 +343,87 @@ export function generateMockTripPlan(setup: TripSetup): TripPlan {
       ],
     },
     hotels: [
-      { id: 'h1', name: `${setup.destination} Budget Stay`, pricePerNight: Math.round(baseCosts.hotel * 0.5), distanceToAttractions: '1.2 km', category: 'budget', safetyRating: 4.0, guestRating: 3.8, whyItFits: 'Closest budget option to Day 1 attractions', tag: 'budget-saver' },
-      { id: 'h2', name: `${setup.destination} Comfort Hotel`, pricePerNight: baseCosts.hotel, distanceToAttractions: '0.8 km', category: 'comfort', safetyRating: 4.5, guestRating: 4.3, whyItFits: 'Best value — walking distance to key spots', tag: 'best-value' },
-      { id: 'h3', name: `${setup.destination} Grand Resort`, pricePerNight: Math.round(baseCosts.hotel * 2), distanceToAttractions: '2.0 km', category: 'premium', safetyRating: 4.8, guestRating: 4.7, whyItFits: 'Premium amenities with pool and spa', tag: 'comfort-pick' },
+      {
+        id: 'h1',
+        name: `${setup.destination} Budget Stay`,
+        pricePerNight: Math.round(baseCosts.hotel * 0.6),
+        distanceToAttractions: '2 km',
+        category: 'budget',
+        safetyRating: 4,
+        guestRating: 3.8,
+        whyItFits: 'Affordable, clean, and close to public transport',
+        tag: 'budget-saver',
+      },
+      {
+        id: 'h2',
+        name: `${setup.destination} Comfort Inn`,
+        pricePerNight: baseCosts.hotel,
+        distanceToAttractions: '1 km',
+        category: 'comfort',
+        safetyRating: 4.5,
+        guestRating: 4.3,
+        whyItFits: 'Great balance of price and comfort',
+        tag: 'best-value',
+      },
+      {
+        id: 'h3',
+        name: `${setup.destination} Premium Hotel`,
+        pricePerNight: Math.round(baseCosts.hotel * 1.5),
+        distanceToAttractions: '0.5 km',
+        category: 'premium',
+        safetyRating: 5,
+        guestRating: 4.7,
+        whyItFits: 'Top-rated with excellent amenities',
+        tag: 'comfort-pick',
+      },
     ],
     flights: [
-      { id: 'f1', airline: 'Budget Air', departureTime: '06:00', arrivalTime: '08:30', duration: '2h 30m', price: Math.round(baseCosts.flight * 0.7), tag: 'cheapest', from: setup.origin || 'Origin', to: setup.destination },
-      { id: 'f2', airline: 'National Carrier', departureTime: '10:00', arrivalTime: '12:15', duration: '2h 15m', price: baseCosts.flight, tag: 'balanced', from: setup.origin || 'Origin', to: setup.destination },
-      { id: 'f3', airline: 'Premium Airlines', departureTime: '14:00', arrivalTime: '15:45', duration: '1h 45m', price: Math.round(baseCosts.flight * 1.4), tag: 'fastest', from: setup.origin || 'Origin', to: setup.destination },
+      {
+        id: 'f1',
+        airline: 'Budget Airways',
+        departureTime: '06:00',
+        arrivalTime: '10:00',
+        duration: '4h',
+        price: Math.round(baseCosts.flight * 0.7),
+        from: setup.origin,
+        to: setup.destination,
+        tag: 'cheapest',
+      },
+      {
+        id: 'f2',
+        airline: 'National Airlines',
+        departureTime: '10:00',
+        arrivalTime: '14:00',
+        duration: '4h',
+        price: baseCosts.flight,
+        from: setup.origin,
+        to: setup.destination,
+        tag: 'balanced',
+      },
+    ],
+    returnFlights: [
+      {
+        id: 'rf1',
+        airline: 'Budget Airways',
+        departureTime: '18:00',
+        arrivalTime: '22:00',
+        duration: '4h',
+        price: Math.round(baseCosts.flight * 0.7),
+        from: setup.destination,
+        to: setup.origin,
+        tag: 'cheapest',
+      },
+      {
+        id: 'rf2',
+        airline: 'National Airlines',
+        departureTime: '14:00',
+        arrivalTime: '18:00',
+        duration: '4h',
+        price: baseCosts.flight,
+        from: setup.destination,
+        to: setup.origin,
+        tag: 'balanced',
+      },
     ],
   };
 }

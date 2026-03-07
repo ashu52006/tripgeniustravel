@@ -28,9 +28,9 @@ export default function LoadingScreen({ origin, destination }: LoadingScreenProp
               scale: [0.5, 1.5, 0.3],
             }}
             transition={{
-              duration: 4 + i,
+              duration: 2 + i * 0.5,
               repeat: Infinity,
-              delay: i * 0.5,
+              delay: i * 0.2,
               ease: 'easeOut',
             }}
           />
@@ -42,11 +42,11 @@ export default function LoadingScreen({ origin, destination }: LoadingScreenProp
         <motion.div
           className="relative"
           animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
         >
           <motion.div
             animate={{ rotate: [0, -5, 5, 0] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            transition={{ duration: 2, repeat: Infinity }}
           >
             <Plane className="w-20 h-20 text-primary" />
           </motion.div>
@@ -57,14 +57,14 @@ export default function LoadingScreen({ origin, destination }: LoadingScreenProp
           className="mt-6 flex items-center gap-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.2 }}
         >
           <span className="text-foreground font-semibold">{origin}</span>
           <motion.div
             className="flex-1 h-0.5 bg-gradient-to-r from-primary via-accent to-primary min-w-[100px]"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
-            transition={{ duration: 1.5, delay: 0.8 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
           />
           <span className="text-foreground font-semibold">{destination}</span>
         </motion.div>
@@ -74,7 +74,7 @@ export default function LoadingScreen({ origin, destination }: LoadingScreenProp
         className="relative z-10 text-center mt-10"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.2 }}
       >
         <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
         <h2 className="text-2xl font-display font-bold text-foreground mb-2">
@@ -83,14 +83,14 @@ export default function LoadingScreen({ origin, destination }: LoadingScreenProp
         <p className="text-muted-foreground">
           Finding flights, hotels, restaurants & hidden gems
         </p>
-        <div className="flex gap-2 mt-6 justify-center">
+        <div className="flex gap-2 mt-4 justify-center">
           {['✈️', '🏨', '🗺️', '🍽️', '💰', '🚕'].map((emoji, i) => (
             <motion.span
               key={i}
               className="text-2xl"
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 1 + i * 0.3 }}
+              transition={{ delay: 0.3 + i * 0.15 }}
             >
               {emoji}
             </motion.span>

@@ -31,6 +31,7 @@ export interface TripSetup {
   destination: string;
   days: number;
   startDate: string;
+  endDate: string;
   travelers: number;
   userBudget: number;
   currency: string;
