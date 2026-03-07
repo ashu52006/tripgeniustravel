@@ -1,10 +1,20 @@
 import { motion } from 'framer-motion';
 import { TrendingUp, AlertTriangle, Lightbulb, ChevronRight } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { BudgetAnalysis } from '@/types/trip';
 
 interface BudgetIntelligenceProps {
   budget: BudgetAnalysis;
 }
+
+const PIE_COLORS = [
+  'hsl(200, 100%, 55%)',
+  'hsl(170, 80%, 45%)',
+  'hsl(38, 92%, 50%)',
+  'hsl(280, 80%, 60%)',
+  'hsl(152, 69%, 45%)',
+  'hsl(0, 84%, 60%)',
+];
 
 export default function BudgetIntelligence({ budget }: BudgetIntelligenceProps) {
   const isOverBudget = budget.userBudget < budget.minimumBudget;
@@ -13,6 +23,11 @@ export default function BudgetIntelligence({ budget }: BudgetIntelligenceProps) 
   const homeCurr = budget.homeCurrency;
   const curr = budget.currency;
   const showDual = homeCurr && homeCurr !== curr;
+
+  const pieData = budget.breakdown.map((item) => ({
+    name: item.category,
+    value: item.recommended,
+  }));
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6">
@@ -51,23 +66,60 @@ export default function BudgetIntelligence({ budget }: BudgetIntelligenceProps) 
         ))}
       </div>
 
-      {/* Breakdown */}
+      {/* Pie Chart Breakdown */}
       <div className="glass rounded-xl p-5 space-y-4">
         <h4 className="font-display font-bold text-foreground">Budget Breakdown</h4>
-        {budget.breakdown.map((item) => {
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={100}
+                paddingAngle={3}
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                labelLine={false}
+              >
+                {pieData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => [`${curr}${value.toLocaleString()}`, 'Recommended']}
+                contentStyle={{
+                  background: 'hsl(220, 20%, 10%)',
+                  border: '1px solid hsl(220, 15%, 25%)',
+                  borderRadius: '12px',
+                  color: 'hsl(210, 40%, 98%)',
+                }}
+              />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Detailed bars */}
+        {budget.breakdown.map((item, i) => {
           const max = Math.max(item.userBudget, item.recommended);
           return (
             <div key={item.category} className="space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-foreground font-medium">{item.category}</span>
+                <span className="text-foreground font-medium flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  {item.category}
+                </span>
                 <div className="flex items-center gap-2 text-xs">
                   <span className="text-muted-foreground">You: {curr}{item.userBudget.toLocaleString()}</span>
+                  {showDual && <span className="text-muted-foreground">(≈{homeCurr}{item.userBudget.toLocaleString()})</span>}
                   <span className="text-primary font-semibold">Need: {curr}{item.recommended.toLocaleString()}</span>
                 </div>
               </div>
               <div className="relative h-3 bg-secondary rounded-full overflow-hidden">
                 <div className="absolute inset-y-0 left-0 bg-muted-foreground/30 rounded-full" style={{ width: `${(item.userBudget / max) * 100}%` }} />
-                <div className="absolute inset-y-0 left-0 bg-primary/70 rounded-full" style={{ width: `${(item.recommended / max) * 100}%` }} />
+                <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${(item.recommended / max) * 100}%`, background: PIE_COLORS[i % PIE_COLORS.length], opacity: 0.7 }} />
               </div>
             </div>
           );

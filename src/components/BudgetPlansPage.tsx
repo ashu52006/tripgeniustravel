@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Sparkles, ArrowRight, ArrowLeft, Check, Crown, Gem, Star, Coins, DollarSign, Loader2 } from 'lucide-react';
+import { Wallet, Sparkles, ArrowRight, ArrowLeft, Check, Loader2, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TripSetup, BudgetPlanOption, regionCurrencies } from '@/types/trip';
@@ -29,6 +29,11 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
 
   const homeCurrency = regionCurrencies[setup.homeRegion];
 
+  // Auto-fetch budget plans on mount
+  useEffect(() => {
+    fetchBudgetPlans();
+  }, []);
+
   const fetchBudgetPlans = async () => {
     setLoading(true);
     try {
@@ -50,7 +55,7 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
       if (error) throw error;
       if (data?.error) {
         toast.error(data.error);
-        setLoading(false);
+        generateFallback();
         return;
       }
 
@@ -58,28 +63,32 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
       setLoaded(true);
     } catch (e) {
       console.error(e);
-      toast.error('Could not fetch budget plans. Generating estimates...');
-      // Fallback: generate mock plans
-      const base = setup.days * setup.travelers * 50;
-      const mockPlans: BudgetPlanOption[] = Array.from({ length: 10 }, (_, i) => {
-        const multiplier = 0.5 + i * 0.35;
-        const total = Math.round(base * multiplier);
-        return {
-          id: `plan-${i}`,
-          name: ['Backpacker', 'Budget', 'Economy', 'Standard', 'Comfort', 'Premium', 'Deluxe', 'Luxury', 'Ultra Luxury', 'Royal'][i],
-          level: i + 1,
-          totalBudget: total,
-          totalBudgetHome: total,
-          description: ['Minimal spending, hostels', 'Budget hotels, local food', 'Clean stays, street food', 'Mid-range all around', 'Comfortable with extras', 'Nice hotels, good food', '4-star experience', 'Luxury hotels, fine dining', 'Top tier everything', 'No expense spared'][i],
-          highlights: ['Basic', 'Value', 'Smart savings', 'Well-rounded', 'Comfortable', 'Treat yourself', 'Premium quality', 'High end', 'Ultra premium', 'Best of best'].slice(i, i + 2),
-          hotelType: ['Hostel', 'Budget hotel', '2-star', '3-star', '3-star+', '4-star', '4-star+', '5-star', '5-star deluxe', 'Palace/Resort'][i],
-          foodType: ['Street food', 'Local joints', 'Mix', 'Good restaurants', 'Nice restaurants', 'Fine dining mix', 'Fine dining', 'Gourmet', 'Michelin-level', 'Private chef'][i],
-          transportType: ['Public', 'Public+auto', 'Mix', 'Taxi/auto', 'Taxi', 'Private car', 'Private car+', 'Luxury car', 'Chauffeur', 'Private jet lol'][i],
-        };
-      });
-      setPlans(mockPlans);
-      setLoaded(true);
+      toast.error('Using estimated budget plans...');
+      generateFallback();
     }
+    setLoading(false);
+  };
+
+  const generateFallback = () => {
+    const base = setup.days * setup.travelers * 50;
+    const mockPlans: BudgetPlanOption[] = Array.from({ length: 10 }, (_, i) => {
+      const multiplier = 0.5 + i * 0.35;
+      const total = Math.round(base * multiplier);
+      return {
+        id: `plan-${i}`,
+        name: ['Backpacker', 'Budget', 'Economy', 'Standard', 'Comfort', 'Premium', 'Deluxe', 'Luxury', 'Ultra Luxury', 'Royal'][i],
+        level: i + 1,
+        totalBudget: total,
+        totalBudgetHome: total,
+        description: ['Minimal spending, hostels', 'Budget hotels, local food', 'Clean stays, street food', 'Mid-range all around', 'Comfortable with extras', 'Nice hotels, good food', '4-star experience', 'Luxury hotels, fine dining', 'Top tier everything', 'No expense spared'][i],
+        highlights: ['Basic', 'Value', 'Smart savings', 'Well-rounded', 'Comfortable', 'Treat yourself', 'Premium quality', 'High end', 'Ultra premium', 'Best of best'].slice(i, i + 2),
+        hotelType: ['Hostel', 'Budget hotel', '2-star', '3-star', '3-star+', '4-star', '4-star+', '5-star', '5-star deluxe', 'Palace/Resort'][i],
+        foodType: ['Street food', 'Local joints', 'Mix', 'Good restaurants', 'Nice restaurants', 'Fine dining mix', 'Fine dining', 'Gourmet', 'Michelin-level', 'Private chef'][i],
+        transportType: ['Public', 'Public+auto', 'Mix', 'Taxi/auto', 'Taxi', 'Private car', 'Private car+', 'Luxury car', 'Chauffeur', 'Private jet lol'][i],
+      };
+    });
+    setPlans(mockPlans);
+    setLoaded(true);
     setLoading(false);
   };
 
@@ -100,9 +109,27 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
       exit={{ opacity: 0 }}
       className="min-h-screen px-4 py-12"
     >
-      <div className="fixed inset-0 pointer-events-none bg-gradient-ocean" />
+      {/* Background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-ocean" />
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              width: 150 + i * 60,
+              height: 150 + i * 60,
+              background: `radial-gradient(circle, hsl(170 80% 45% / ${0.05 + i * 0.02}), transparent)`,
+              left: `${5 + i * 20}%`,
+              top: `${10 + i * 15}%`,
+            }}
+            animate={{ scale: [1, 1.2, 1], y: [0, -20, 0] }}
+            transition={{ duration: 4 + i, repeat: Infinity }}
+          />
+        ))}
+      </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto">
+      <div className="relative z-10 max-w-5xl mx-auto pt-16">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -117,49 +144,33 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
           <p className="text-muted-foreground">
             {setup.origin} → {setup.destination} • {setup.days} days • {setup.travelers} traveler(s)
           </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            All prices shown in {homeCurrency.code} ({homeCurrency.symbol})
+            {setup.currency !== setup.homeCurrency && ` & destination currency (${setup.currency})`}
+          </p>
         </motion.div>
 
-        {!loaded && (
+        {loading && !loaded && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-20"
           >
-            <Button
-              onClick={fetchBudgetPlans}
-              disabled={loading}
-              size="lg"
-              className="h-16 px-12 text-lg bg-gradient-hero border-0 text-primary-foreground font-bold gap-3 rounded-2xl shadow-glow"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  Analyzing budgets...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-6 h-6" />
-                  Generate 10 Budget Plans
-                  <ArrowRight className="w-6 h-6" />
-                </>
-              )}
-            </Button>
-
-            {loading && (
-              <div className="mt-8 flex justify-center gap-3">
-                {['🏨', '✈️', '🍽️', '🎫', '🚕'].map((emoji, i) => (
-                  <motion.span
-                    key={i}
-                    className="text-3xl"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.3 }}
-                  >
-                    {emoji}
-                  </motion.span>
-                ))}
-              </div>
-            )}
+            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+            <p className="text-lg text-muted-foreground">Analyzing budget options...</p>
+            <div className="flex gap-2 mt-4 justify-center">
+              {['🏨', '✈️', '🍽️', '🎫', '🚕'].map((emoji, i) => (
+                <motion.span
+                  key={i}
+                  className="text-2xl"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.2 }}
+                >
+                  {emoji}
+                </motion.span>
+              ))}
+            </div>
           </motion.div>
         )}
 
@@ -227,7 +238,7 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
             >
               <h3 className="font-display font-bold text-foreground mb-3 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-primary" />
-                Or Enter Your Own Budget
+                Or Enter Your Own Budget ({homeCurrency.code})
               </h3>
               <div className="flex gap-3">
                 <div className="flex-1 relative">
