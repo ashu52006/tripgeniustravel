@@ -141,12 +141,13 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
                   {/* Plan Image */}
                   <div className="shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border">
                     <img
-                      src={`https://source.unsplash.com/200x200/?${encodeURIComponent(
-                        (plan as any).imageKeyword || `${plan.name} travel ${setup.destination}`
-                      )}`}
+                      src={`https://images.unsplash.com/photo-${['1469854523086-cc02fe5d8800','1476514525535-07fb3b4ae5f1','1488646953014-85cb44e25828','1507003211169-0a1dd7228f2d','1551882547-ff40c63fe5fa','1571896349842-33c89424de2d','1540541338287-41700207dee6','1566073771259-6a6300d76e89','1582719508461-905c673c39c1','1520250497591-112f2f40a3f4'][i]}?w=200&h=200&fit=crop&auto=format`}
                       alt={plan.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   </div>
 
