@@ -111,21 +111,82 @@ const plans = [
 
 export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubscribe }: SubscriptionPageProps) {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>(null);
 
-  const handleSubscribe = (planId: string) => {
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleSubscribe = async (planId: string) => {
     if (planId === 'basic') return;
     if (planId === 'enterprise') {
       window.open('mailto:tripgenius@travel.com', '_blank');
       return;
     }
-    
-    const plan = plans.find(p => p.id === planId);
-    if (!plan) return;
 
-    // Open Razorpay payment page
-    window.open('https://razorpay.me/@shaikashrafahmed', '_blank');
-    toast.success(`Redirecting to payment for ${plan.name} plan!`);
-    onSubscribe?.(planId);
+    const plan = plans.find(p => p.id === planId);
+    if (!plan || plan.price <= 0) return;
+
+    setLoading(planId);
+
+    try {
+      // Load Razorpay script
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error('Failed to load payment system. Please try again.');
+        setLoading(null);
+        return;
+      }
+
+      // Create order via edge function
+      const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
+        body: { planId: plan.id, planName: plan.name, amount: plan.price },
+      });
+
+      if (error || data?.error) {
+        toast.error(data?.error || 'Failed to create payment order');
+        setLoading(null);
+        return;
+      }
+
+      // Open Razorpay Checkout
+      const options = {
+        key: data.keyId,
+        amount: plan.price * 100,
+        currency: 'INR',
+        name: 'TripGenius',
+        description: `${plan.name} Plan - ₹${plan.price}/mo`,
+        order_id: data.orderId,
+        handler: function () {
+          toast.success(`Successfully subscribed to ${plan.name} plan! 🎉`);
+          onSubscribe?.(planId);
+        },
+        prefill: {},
+        theme: { color: '#0ea5e9' },
+        modal: {
+          ondismiss: () => setLoading(null),
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on('payment.failed', (response: any) => {
+        toast.error(`Payment failed: ${response.error.description}`);
+        setLoading(null);
+      });
+      rzp.open();
+    } catch (e: any) {
+      console.error('Payment error:', e);
+      toast.error('Payment failed. Please try again.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
