@@ -121,32 +121,10 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
 
-    // Razorpay integration
-    const options = {
-      key: 'rzp_test_placeholder', // Will be replaced with real key
-      amount: plan.price * 100,
-      currency: 'INR',
-      name: 'TripGenius',
-      description: `${plan.name} Plan Subscription`,
-      handler: function (response: any) {
-        toast.success(`Successfully subscribed to ${plan.name} plan!`);
-        onSubscribe?.(planId);
-      },
-      prefill: {},
-      theme: { color: '#0ea5e9' },
-    };
-
-    // Check if Razorpay is loaded
-    if ((window as any).Razorpay) {
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } else {
-      toast.error('Payment system loading... please try again.');
-      // Load Razorpay script
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      document.body.appendChild(script);
-    }
+    // Open Razorpay payment page
+    window.open('https://razorpay.me/@shaikashrafahmed', '_blank');
+    toast.success(`Redirecting to payment for ${plan.name} plan!`);
+    onSubscribe?.(planId);
   };
 
   return (
