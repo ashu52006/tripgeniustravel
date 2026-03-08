@@ -69,10 +69,18 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
   };
 
   const generateFallback = () => {
-    const base = setup.days * setup.travelers * 50;
-    const mockPlans: BudgetPlanOption[] = Array.from({ length: 10 }, (_, i) => {
-      const multiplier = 0.5 + i * 0.35;
-      const total = Math.round(base * multiplier);
+    // Realistic per-person per-day costs in USD, then multiply by days & travelers
+    const perDayUSD = [15, 30, 50, 75, 100, 150, 200, 350, 500, 800];
+    const mockPlans: BudgetPlanOption[] = perDayUSD.map((daily, i) => {
+      const totalUSD = daily * setup.days * setup.travelers;
+      // Rough conversion: use a multiplier based on home currency (default ~80 for INR-like)
+      const currencyMultiplier = setup.homeCurrencyCode === 'USD' ? 1
+        : setup.homeCurrencyCode === 'EUR' ? 0.92
+        : setup.homeCurrencyCode === 'GBP' ? 0.79
+        : setup.homeCurrencyCode === 'JPY' ? 150
+        : setup.homeCurrencyCode === 'KRW' ? 1300
+        : 83; // default INR
+      const total = Math.round(totalUSD * currencyMultiplier);
       return {
         id: `plan-${i}`,
         name: ['Backpacker', 'Budget', 'Economy', 'Standard', 'Comfort', 'Premium', 'Deluxe', 'Luxury', 'Ultra Luxury', 'Royal'][i],
