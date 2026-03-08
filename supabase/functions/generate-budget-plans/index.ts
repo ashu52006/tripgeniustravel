@@ -11,8 +11,8 @@ serve(async (req) => {
   try {
     const { origin, destination, days, travelers, style, pace, startDate, destCurrency, homeCurrency, homeCurrencyCode } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
 
     const prompt = `You are a travel budget expert. Generate exactly 10 budget plan options for a trip.
 
@@ -49,20 +49,21 @@ Rules:
 - Use REALISTIC current prices for ${destination}
 - Each plan should be meaningfully different (not just +10%)
 - Budget should roughly double from plan 1 to plan 10
-- imageKeyword: 2-3 words describing the travel style for that tier (e.g. "hostel backpacker", "luxury resort pool", "boutique hotel rooftop")`;
+- imageKeyword: 2-3 words describing the travel style for that tier`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: "You are a travel budget AI. Return ONLY valid JSON, no markdown formatting." },
           { role: "user", content: prompt },
         ],
+        temperature: 0.7,
       }),
     });
 
