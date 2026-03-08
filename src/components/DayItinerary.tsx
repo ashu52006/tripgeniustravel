@@ -72,10 +72,10 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
             return [place.id, existingImage] as const;
           }
 
+          const clean = cleanPlaceName(place.name);
           const searchQueries = [
-            place.name,
-            `${place.name} ${place.category}`,
-            `${place.name} ${dayPlan.title}`,
+            clean,
+            `${clean} ${place.category}`,
           ];
 
           for (const query of searchQueries) {
