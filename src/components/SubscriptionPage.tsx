@@ -240,14 +240,14 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
               </ul>
               <Button
                 onClick={() => handleSubscribe(plan.id)}
-                disabled={currentPlan === plan.id}
+                disabled={currentPlan === plan.id || loading === plan.id}
                 className={`w-full rounded-xl ${
                   plan.popular
                     ? 'bg-warning text-warning-foreground hover:bg-warning/90'
                     : 'bg-gradient-hero border-0 text-primary-foreground'
                 }`}
               >
-                {currentPlan === plan.id ? '✓ Current Plan' : plan.cta}
+                {loading === plan.id ? 'Processing...' : currentPlan === plan.id ? '✓ Current Plan' : plan.cta}
               </Button>
             </motion.div>
           ))}
