@@ -164,7 +164,52 @@ const Index = () => {
     toast.success('Email composer opened!');
   };
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  const handleSaveTrip = async () => {
+    if (!plan || !user) {
+      toast.error('Please sign in to save trips.');
+      return;
+    }
+    if (planConfig.savedTripsLimit === 0) {
+      toast.error('Saving trips requires Silver plan or above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+
+    try {
+      // Check existing saved trips count
+      if (planConfig.savedTripsLimit > 0) {
+        const { count } = await supabase
+          .from('saved_trips')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if (count !== null && count >= planConfig.savedTripsLimit) {
+          toast.error(`You've reached your limit of ${planConfig.savedTripsLimit} saved trips. Upgrade for more!`);
+          setStep('subscribe');
+          return;
+        }
+      }
+
+      const { error } = await supabase.from('saved_trips').insert({
+        user_id: user.id,
+        plan_id: userPlan,
+        trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
+        origin: plan.setup.origin,
+        destination: plan.setup.destination,
+        start_date: plan.setup.startDate,
+        days: plan.days.length,
+        travelers: plan.setup.travelers,
+        trip_data: plan as any,
+      });
+
+      if (error) throw error;
+      toast.success('Trip saved successfully! 🎉');
+    } catch (e: any) {
+      console.error('Save trip error:', e);
+      toast.error('Failed to save trip. Please try again.');
+    }
+  };
+
     { id: 'dashboard', label: t('dashboard'), icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'itinerary', label: t('itinerary'), icon: <CalendarDays className="w-4 h-4" /> },
     { id: 'budget', label: t('budget'), icon: <Wallet className="w-4 h-4" /> },
