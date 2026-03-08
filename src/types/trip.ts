@@ -35,7 +35,9 @@ export interface TripSetup {
   travelers: number;
   userBudget: number;
   currency: string;
+  currencyCode: string;
   homeCurrency: string;
+  homeCurrencyCode: string;
   homeRegion: UserRegion;
   style: TravelStyle;
   pace: TravelPace;

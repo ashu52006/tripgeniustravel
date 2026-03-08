@@ -58,7 +58,9 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
       travelers,
       userBudget: 0,
       currency: destCurrency.symbol,
+      currencyCode: destCurrency.code,
       homeCurrency: homeCurrency.symbol,
+      homeCurrencyCode: homeCurrency.code,
       homeRegion,
       style, pace,
     };

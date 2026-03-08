@@ -44,9 +44,9 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
           style: setup.style,
           pace: setup.pace,
           startDate: setup.startDate,
-          destCurrency: setup.currency,
+          destCurrency: setup.currencyCode,
           homeCurrency: setup.homeCurrency,
-          homeCurrencyCode: homeCurrency.code,
+          homeCurrencyCode: setup.homeCurrencyCode,
         },
       });
 
