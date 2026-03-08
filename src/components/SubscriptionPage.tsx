@@ -4,6 +4,7 @@ import { Check, Crown, Rocket, Star, Zap, Building2, Phone, Mail, ArrowLeft } fr
 import { Button } from '@/components/ui/button';
 import BackgroundCarousel from './BackgroundCarousel';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionPageProps {
   onBack: () => void;
