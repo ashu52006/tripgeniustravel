@@ -210,6 +210,7 @@ const Index = () => {
     }
   };
 
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: t('dashboard'), icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'itinerary', label: t('itinerary'), icon: <CalendarDays className="w-4 h-4" /> },
     { id: 'budget', label: t('budget'), icon: <Wallet className="w-4 h-4" /> },
