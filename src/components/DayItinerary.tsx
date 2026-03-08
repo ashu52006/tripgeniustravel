@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock } from 'lucide-react';
 import { DayPlan, PlacePriority } from '@/types/trip';
@@ -12,6 +12,27 @@ const priorityConfig: Record<PlacePriority, { icon: React.ReactNode; label: stri
 const categoryEmoji: Record<string, string> = {
   attraction: '🏛️', food: '🍽️', transport: '🚗', rest: '😌',
   activity: '🎯', viewpoint: '🌅', flight: '✈️', hotel: '🏨',
+};
+
+const fallbackPlaceImage = (placeName: string, seed: string) =>
+  `https://loremflickr.com/200/200/${placeName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${encodeURIComponent(seed)}`;
+
+const resolveWikipediaPlaceImage = async (query: string): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const pages = data?.query?.pages ? (Object.values(data.query.pages) as Array<{ thumbnail?: { source?: string } }>) : [];
+    const thumbnail = pages.find((page) => page?.thumbnail?.source)?.thumbnail?.source;
+
+    return typeof thumbnail === 'string' ? thumbnail : null;
+  } catch {
+    return null;
+  }
 };
 
 interface DayItineraryProps {
