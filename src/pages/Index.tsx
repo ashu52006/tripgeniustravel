@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2 } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -11,6 +11,7 @@ import DayItinerary from '@/components/DayItinerary';
 import BudgetIntelligence from '@/components/BudgetIntelligence';
 import TripDashboard from '@/components/TripDashboard';
 import SubscriptionPage from '@/components/SubscriptionPage';
+import SavedTripsPage from '@/components/SavedTripsPage';
 import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -22,7 +23,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPlanConfig } from '@/lib/planLimits';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe';
+type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe' | 'saved-trips';
 type Tab = 'dashboard' | 'itinerary' | 'budget';
 
 const Index = () => {
@@ -243,7 +244,7 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe') && (
+            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe' || step === 'saved-trips') && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -252,6 +253,7 @@ const Index = () => {
                   else if (step === 'budget') setStep('setup');
                   else if (step === 'setup') setStep('region');
                   else if (step === 'subscribe') setStep('plan');
+                  else if (step === 'saved-trips') setStep('region');
                 }}
                 className="text-muted-foreground"
               >
@@ -270,6 +272,17 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {user && (step === 'region' || step === 'setup' || step === 'plan') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('saved-trips')}
+                className="gap-1"
+              >
+                <FolderOpen className="w-4 h-4" />
+                My Trips
+              </Button>
+            )}
             {step === 'plan' && (
               <Button
                 variant="ghost"
@@ -360,6 +373,18 @@ const Index = () => {
               onBack={() => setStep('plan')}
               currentPlan={userPlan}
               onSubscribe={(p) => { setUserPlan(p); setStep('plan'); }}
+            />
+          )}
+
+          {step === 'saved-trips' && (
+            <SavedTripsPage
+              key="saved-trips"
+              onBack={() => setStep('region')}
+              onLoadTrip={(tripPlan) => {
+                setPlan(tripPlan);
+                setTripSetup(tripPlan.setup);
+                setStep('plan');
+              }}
             />
           )}
 
