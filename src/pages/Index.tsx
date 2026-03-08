@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -19,6 +19,7 @@ import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPlanConfig } from '@/lib/planLimits';
 import { toast } from 'sonner';
 
 type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe';
@@ -117,6 +118,8 @@ const Index = () => {
     }
   };
 
+  const planConfig = getPlanConfig(userPlan);
+
   // Free users see only first half of days
   const getFreeDays = () => {
     if (!plan) return 0;
@@ -124,8 +127,87 @@ const Index = () => {
   };
 
   const isLockedDay = (dayIndex: number) => {
-    if (userPlan !== 'basic') return false; // Paid users see all
+    if (planConfig.allDaysUnlocked) return false;
     return dayIndex >= getFreeDays();
+  };
+
+  const handleExportPdf = () => {
+    if (!planConfig.canExportPdf) {
+      toast.error('PDF export is available on Gold plan and above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+    window.print();
+    toast.success('Print dialog opened! Save as PDF from there.');
+  };
+
+  const handleEmailTrip = () => {
+    if (!planConfig.canEmailTrip || !plan) {
+      toast.error('Email sharing is available on Gold plan and above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+    const subject = encodeURIComponent(`Trip Plan: ${plan.setup.origin} → ${plan.setup.destination}`);
+    const body = encodeURIComponent(
+      `Check out my trip plan!\n\n` +
+      `📍 ${plan.setup.origin} → ${plan.setup.destination}\n` +
+      `📅 ${plan.days.length} days starting ${plan.setup.startDate}\n` +
+      `👥 ${plan.setup.travelers} travelers\n` +
+      `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
+      `Day-by-day highlights:\n` +
+      plan.days.slice(0, planConfig.allDaysUnlocked ? plan.days.length : getFreeDays()).map(d =>
+        `Day ${d.day}: ${d.title} - ${d.places.map(p => p.name).join(', ')}`
+      ).join('\n') +
+      `\n\nPlanned with TripGenius ✈️`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+    toast.success('Email composer opened!');
+  };
+
+  const handleSaveTrip = async () => {
+    if (!plan || !user) {
+      toast.error('Please sign in to save trips.');
+      return;
+    }
+    if (planConfig.savedTripsLimit === 0) {
+      toast.error('Saving trips requires Silver plan or above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+
+    try {
+      // Check existing saved trips count
+      if (planConfig.savedTripsLimit > 0) {
+        const { count } = await supabase
+          .from('saved_trips')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+
+        if (count !== null && count >= planConfig.savedTripsLimit) {
+          toast.error(`You've reached your limit of ${planConfig.savedTripsLimit} saved trips. Upgrade for more!`);
+          setStep('subscribe');
+          return;
+        }
+      }
+
+      const { error } = await supabase.from('saved_trips').insert({
+        user_id: user.id,
+        plan_id: userPlan,
+        trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
+        origin: plan.setup.origin,
+        destination: plan.setup.destination,
+        start_date: plan.setup.startDate,
+        days: plan.days.length,
+        travelers: plan.setup.travelers,
+        trip_data: plan as any,
+      });
+
+      if (error) throw error;
+      toast.success('Trip saved successfully! 🎉');
+    } catch (e: any) {
+      console.error('Save trip error:', e);
+      toast.error('Failed to save trip. Please try again.');
+    }
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -166,6 +248,18 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {step === 'plan' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSaveTrip}
+                className="gap-1"
+              >
+                <Save className="w-4 h-4" />
+                Save
+                {planConfig.savedTripsLimit === 0 && <Crown className="w-3 h-3 text-warning" />}
+              </Button>
+            )}
             {step === 'plan' && (
               <Button
                 variant="ghost"
@@ -222,6 +316,7 @@ const Index = () => {
               homeRegion={homeRegion}
               onSubmit={handleTripSetup}
               onBack={() => setStep('region')}
+              userPlan={userPlan}
             />
           )}
 
@@ -252,6 +347,29 @@ const Index = () => {
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
+                  {/* Action buttons for paid features */}
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPdf}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canExportPdf ? 'opacity-50' : ''}`}
+                    >
+                      <Download className="w-4 h-4" />
+                      Export PDF
+                      {!planConfig.canExportPdf && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEmailTrip}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
+                    >
+                      <Mail className="w-4 h-4" />
+                      Email Trip
+                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
+                  </div>
                   {plan.days.map((day, i) => (
                     <DayItinerary
                       key={day.day}

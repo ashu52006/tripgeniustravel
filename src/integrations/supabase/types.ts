@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      saved_trips: {
+        Row: {
+          created_at: string
+          days: number
+          destination: string
+          id: string
+          origin: string
+          plan_id: string
+          start_date: string
+          travelers: number
+          trip_data: Json
+          trip_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          days: number
+          destination: string
+          id?: string
+          origin: string
+          plan_id?: string
+          start_date: string
+          travelers?: number
+          trip_data: Json
+          trip_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          days?: number
+          destination?: string
+          id?: string
+          origin?: string
+          plan_id?: string
+          start_date?: string
+          travelers?: number
+          trip_data?: Json
+          trip_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

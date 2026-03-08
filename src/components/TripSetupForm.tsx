@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { TripSetup, TravelStyle, TravelPace, UserRegion, regionCurrencies } from '@/types/trip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getCurrencyForDestination } from '@/lib/currencies';
+import { getPlanConfig } from '@/lib/planLimits';
 import { cn } from '@/lib/utils';
 
 const styles: { value: TravelStyle; labelKey: string; icon: string }[] = [
@@ -30,9 +31,10 @@ interface TripSetupFormProps {
   homeRegion: UserRegion;
   onSubmit: (setup: TripSetup) => void;
   onBack: () => void;
+  userPlan?: string;
 }
 
-export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetupFormProps) {
+export default function TripSetupForm({ homeRegion, onSubmit, onBack, userPlan = 'basic' }: TripSetupFormProps) {
   const { t } = useLanguage();
   const homeCurrency = regionCurrencies[homeRegion];
 
@@ -46,11 +48,16 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
 
   const destCurrency = destination ? getCurrencyForDestination(destination) : homeCurrency;
 
+  const planConfig = getPlanConfig(userPlan);
+  const maxDays = planConfig.maxDays;
   const days = startDate && endDate ? differenceInDays(endDate, startDate) + 1 : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!origin || !destination || !startDate || !endDate || days < 1) return;
+    if (days > maxDays) {
+      return;
+    }
     const setup: TripSetup = {
       origin, destination, days,
       startDate: format(startDate, 'yyyy-MM-dd'),
@@ -232,9 +239,14 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="glass-highlight rounded-xl p-3 text-center text-sm text-primary font-semibold"
+              className={`glass-highlight rounded-xl p-3 text-center text-sm font-semibold ${days > maxDays ? 'text-destructive border border-destructive/50' : 'text-primary'}`}
             >
               ✈️ Trip Duration: {days} {days === 1 ? 'day' : 'days'}
+              {days > maxDays && (
+                <span className="block text-xs mt-1">
+                  Your plan supports up to {maxDays} days. Upgrade for longer trips!
+                </span>
+              )}
             </motion.div>
           )}
 
@@ -309,7 +321,7 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             <Button
               type="submit"
               size="lg"
-              disabled={!origin || !destination || !startDate || !endDate || days < 1}
+              disabled={!origin || !destination || !startDate || !endDate || days < 1 || days > maxDays}
               className="flex-1 h-14 text-lg bg-gradient-hero border-0 text-primary-foreground font-semibold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all"
             >
               <Plane className="w-5 h-5" />
