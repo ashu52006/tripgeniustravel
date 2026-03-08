@@ -20,6 +20,30 @@ const planColors = [
   'border-warning/50', 'border-warning/70', 'border-success/60',
 ];
 
+// Unique curated image keywords per tier to avoid repeating images
+const planImageKeywords = [
+  'backpacker hostel dorm',
+  'budget hotel room',
+  'economy travel suitcase',
+  'city hotel lobby',
+  'comfortable resort pool',
+  'premium suite view',
+  'deluxe spa luxury',
+  'luxury villa ocean',
+  'ultra luxury penthouse',
+  'royal palace suite',
+];
+
+const getPlanBadge = (level: number, totalPlans: number) => {
+  if (level <= 2) return { label: '⚠️ Not Recommended', className: 'bg-destructive/15 text-destructive border-destructive/30' };
+  if (level === 3) return { label: '💰 Budget Pick', className: 'bg-accent/15 text-accent border-accent/30' };
+  if (level === 4 || level === 5) return { label: '⭐ Recommended', className: 'bg-primary/15 text-primary border-primary/30' };
+  if (level === 6) return { label: '🏆 Best for Your Trip', className: 'bg-warning/20 text-warning border-warning/40' };
+  if (level === 7) return { label: '💎 Premium Choice', className: 'bg-primary/15 text-primary border-primary/30' };
+  if (level >= 8) return { label: '👑 Splurge', className: 'bg-muted text-muted-foreground border-border' };
+  return null;
+};
+
 export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: BudgetPlansPageProps) {
   const [plans, setPlans] = useState<BudgetPlanOption[]>([]);
   const [loading, setLoading] = useState(false);
