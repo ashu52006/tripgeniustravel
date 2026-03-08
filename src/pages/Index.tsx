@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -10,6 +10,7 @@ import LoadingScreen from '@/components/LoadingScreen';
 import DayItinerary from '@/components/DayItinerary';
 import BudgetIntelligence from '@/components/BudgetIntelligence';
 import TripDashboard from '@/components/TripDashboard';
+import SubscriptionPage from '@/components/SubscriptionPage';
 import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -20,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan';
+type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe';
 type Tab = 'dashboard' | 'itinerary' | 'budget';
 
 const Index = () => {
@@ -31,6 +32,7 @@ const Index = () => {
   const [tripSetup, setTripSetup] = useState<TripSetup | null>(null);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [userPlan, setUserPlan] = useState<string>('basic');
 
   const handleGetStarted = () => {
     if (user) {
@@ -40,9 +42,7 @@ const Index = () => {
     }
   };
 
-  const handleAuthSuccess = () => {
-    setStep('region');
-  };
+  const handleAuthSuccess = () => setStep('region');
 
   const handleRegionSelect = (region: UserRegion) => {
     setHomeRegion(region);
@@ -116,6 +116,17 @@ const Index = () => {
     }
   };
 
+  // Calculate how many days are free (half the itinerary)
+  const getFreeDays = () => {
+    if (!plan) return 0;
+    return Math.ceil(plan.days.length / 2);
+  };
+
+  const isLockedDay = (dayIndex: number) => {
+    if (userPlan !== 'basic') return false;
+    return dayIndex >= getFreeDays();
+  };
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: t('dashboard'), icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'itinerary', label: t('itinerary'), icon: <CalendarDays className="w-4 h-4" /> },
@@ -124,11 +135,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {(step === 'plan' || step === 'budget' || step === 'setup') && (
+            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe') && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -136,6 +146,7 @@ const Index = () => {
                   if (step === 'plan') setStep('budget');
                   else if (step === 'budget') setStep('setup');
                   else if (step === 'setup') setStep('region');
+                  else if (step === 'subscribe') setStep('plan');
                 }}
                 className="text-muted-foreground"
               >
@@ -154,6 +165,17 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {step === 'plan' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('subscribe')}
+                className="text-warning gap-1"
+              >
+                <Crown className="w-4 h-4" />
+                {userPlan === 'basic' ? 'Upgrade' : userPlan}
+              </Button>
+            )}
             <LanguageSelector />
             <AuthButton />
           </div>
@@ -215,13 +237,29 @@ const Index = () => {
             <LoadingScreen key="loading" origin={tripSetup.origin} destination={tripSetup.destination} />
           )}
 
+          {step === 'subscribe' && (
+            <SubscriptionPage
+              key="subscribe"
+              onBack={() => setStep('plan')}
+              currentPlan={userPlan}
+              onSubscribe={(p) => { setUserPlan(p); setStep('plan'); }}
+            />
+          )}
+
           {step === 'plan' && plan && (
             <div key="plan">
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
-                  {plan.days.map((day) => (
-                    <DayItinerary key={day.day} dayPlan={day} currency={plan.budget.currency} homeCurrency={plan.setup.homeCurrency} />
+                  {plan.days.map((day, i) => (
+                    <DayItinerary
+                      key={day.day}
+                      dayPlan={day}
+                      currency={plan.budget.currency}
+                      homeCurrency={plan.setup.homeCurrency}
+                      isLocked={isLockedDay(i)}
+                      onSubscribe={() => setStep('subscribe')}
+                    />
                   ))}
                 </div>
               )}
