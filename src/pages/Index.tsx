@@ -123,9 +123,9 @@ const Index = () => {
     return Math.ceil(plan.days.length / 2);
   };
 
-  const isLockedDay = (dayIndex: number) => {
-    if (userPlan !== 'basic') return false;
-    return dayIndex >= getFreeDays();
+  const isLockedDay = (_dayIndex: number) => {
+    // Admin mode: all days unlocked
+    return false;
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [

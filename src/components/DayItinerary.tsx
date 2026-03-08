@@ -184,19 +184,19 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                           </div>
 
                           {/* Place Image */}
-                          {place.imageUrl && (
-                            <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border">
-                              <img
-                                src={place.imageUrl}
-                                alt={place.name}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = `https://source.unsplash.com/200x200/?${encodeURIComponent(place.name)}`;
-                                }}
-                              />
-                            </div>
-                          )}
+                          <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border">
+                            <img
+                              src={place.imageUrl && place.imageUrl.startsWith('http') && !place.imageUrl.includes('source.unsplash.com')
+                                ? place.imageUrl
+                                : `https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=200&h=200&fit=crop&auto=format&q=60`}
+                              alt={place.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </motion.div>
