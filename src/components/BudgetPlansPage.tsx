@@ -57,7 +57,8 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
         return;
       }
 
-      setPlans(data.plans || []);
+      const plansList = Array.isArray(data) ? data : (data.plans || []);
+      setPlans(plansList);
       setLoaded(true);
     } catch (e) {
       console.error(e);
