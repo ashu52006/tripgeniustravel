@@ -102,7 +102,7 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                 <div className="absolute left-[23px] top-0 bottom-0 w-0.5 bg-border" />
 
                 {dayPlan.places.map((place, i) => {
-                  const priority = priorityConfig[place.priority];
+                  const priority = priorityConfig[place.priority] || priorityConfig['optional'];
                   return (
                     <motion.div
                       key={place.id}
