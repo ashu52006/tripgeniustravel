@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { TripSetup, TravelStyle, TravelPace, UserRegion, regionCurrencies } from '@/types/trip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getCurrencyForDestination } from '@/lib/currencies';
+import { getPlanConfig } from '@/lib/planLimits';
 import { cn } from '@/lib/utils';
 
 const styles: { value: TravelStyle; labelKey: string; icon: string }[] = [
