@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2 } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -11,6 +11,7 @@ import DayItinerary from '@/components/DayItinerary';
 import BudgetIntelligence from '@/components/BudgetIntelligence';
 import TripDashboard from '@/components/TripDashboard';
 import SubscriptionPage from '@/components/SubscriptionPage';
+import SavedTripsPage from '@/components/SavedTripsPage';
 import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -22,7 +23,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getPlanConfig } from '@/lib/planLimits';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe';
+type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe' | 'saved-trips';
 type Tab = 'dashboard' | 'itinerary' | 'budget';
 
 const Index = () => {
