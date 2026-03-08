@@ -388,7 +388,7 @@ const Index = () => {
             />
           )}
 
-
+          {step === 'plan' && plan && (
             <div key="plan">
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
