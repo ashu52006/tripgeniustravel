@@ -391,6 +391,16 @@ const Index = () => {
                       Email Trip
                       {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleWhatsAppShare}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
+                    >
+                      <Share2 className="w-4 h-4" />
+                      WhatsApp
+                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
                   </div>
                   {plan.days.map((day, i) => (
                     <DayItinerary
