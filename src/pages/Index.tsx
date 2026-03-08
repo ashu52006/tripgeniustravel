@@ -376,7 +376,19 @@ const Index = () => {
             />
           )}
 
-          {step === 'plan' && plan && (
+          {step === 'saved-trips' && (
+            <SavedTripsPage
+              key="saved-trips"
+              onBack={() => setStep('region')}
+              onLoadTrip={(tripPlan) => {
+                setPlan(tripPlan);
+                setTripSetup(tripPlan.setup);
+                setStep('plan');
+              }}
+            />
+          )}
+
+
             <div key="plan">
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
