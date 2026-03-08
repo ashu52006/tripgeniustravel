@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock } from 'lucide-react';
 import { DayPlan, PlacePriority } from '@/types/trip';
@@ -14,6 +14,27 @@ const categoryEmoji: Record<string, string> = {
   activity: '🎯', viewpoint: '🌅', flight: '✈️', hotel: '🏨',
 };
 
+const fallbackPlaceImage = (placeName: string, seed: string) =>
+  `https://loremflickr.com/200/200/${placeName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${encodeURIComponent(seed)}`;
+
+const resolveWikipediaPlaceImage = async (query: string): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const pages = data?.query?.pages ? (Object.values(data.query.pages) as Array<{ thumbnail?: { source?: string } }>) : [];
+    const thumbnail = pages.find((page) => page?.thumbnail?.source)?.thumbnail?.source;
+
+    return typeof thumbnail === 'string' ? thumbnail : null;
+  } catch {
+    return null;
+  }
+};
+
 interface DayItineraryProps {
   dayPlan: DayPlan;
   currency: string;
@@ -24,7 +45,51 @@ interface DayItineraryProps {
 
 export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked, onSubscribe }: DayItineraryProps) {
   const [expanded, setExpanded] = useState(!isLocked);
+  const [placeImages, setPlaceImages] = useState<Record<string, string>>({});
   const showDual = homeCurrency && homeCurrency !== currency;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPlaceImages = async () => {
+      const imageEntries = await Promise.all(
+        dayPlan.places.map(async (place, index) => {
+          const existingImage = place.imageUrl;
+          if (
+            existingImage &&
+            existingImage.startsWith('http') &&
+            !existingImage.includes('source.unsplash.com') &&
+            !existingImage.includes('loremflickr.com')
+          ) {
+            return [place.id, existingImage] as const;
+          }
+
+          const searchQueries = [
+            place.name,
+            `${place.name} ${place.category}`,
+            `${place.name} ${dayPlan.title}`,
+          ];
+
+          for (const query of searchQueries) {
+            const wikiImage = await resolveWikipediaPlaceImage(query);
+            if (wikiImage) return [place.id, wikiImage] as const;
+          }
+
+          return [place.id, fallbackPlaceImage(place.name, `${dayPlan.day}-${index}`)] as const;
+        })
+      );
+
+      if (!cancelled) {
+        setPlaceImages(Object.fromEntries(imageEntries));
+      }
+    };
+
+    loadPlaceImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dayPlan.day, dayPlan.title, dayPlan.places]);
 
   if (isLocked) {
     return (
@@ -186,16 +251,12 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                           {/* Place Image */}
                           <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border">
                             <img
-                              src={
-                                place.imageUrl && place.imageUrl.startsWith('http') && !place.imageUrl.includes('source.unsplash.com')
-                                  ? place.imageUrl
-                                  : `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`
-                              }
-                              alt={place.name}
+                              src={placeImages[place.id] || fallbackPlaceImage(place.name, `${dayPlan.day}-${i}`)}
+                              alt={`${place.name} photo`}
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
-                                const fallback = `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`;
+                                const fallback = fallbackPlaceImage(place.name, `${dayPlan.day}-${i}`);
                                 if ((e.currentTarget as HTMLImageElement).src !== fallback) {
                                   (e.currentTarget as HTMLImageElement).src = fallback;
                                 } else {
