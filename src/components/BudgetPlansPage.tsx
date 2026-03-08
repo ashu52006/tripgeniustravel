@@ -137,35 +137,49 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
                     : `${planColors[i]} hover:border-primary/40 hover:shadow-card`
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{planIcons[i]}</span>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                          Level {plan.level}
-                        </span>
+                <div className="flex gap-4">
+                  {/* Plan Image */}
+                  <div className="shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border">
+                    <img
+                      src={`https://source.unsplash.com/200x200/?${encodeURIComponent(
+                        (plan as any).imageKeyword || `${plan.name} travel ${setup.destination}`
+                      )}`}
+                      alt={plan.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{planIcons[i]}</span>
+                          <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                            Level {plan.level}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
+                      {selectedPlan === plan.id && <Check className="w-6 h-6 text-primary shrink-0" />}
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2">
+                      <span className="text-2xl font-display font-bold text-foreground">
+                        {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
+                      </span>
+                      {setup.currency !== setup.homeCurrency && (
+                        <span className="text-sm text-muted-foreground">
+                          ({setup.currency}{plan.totalBudget.toLocaleString()})
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
+                      <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
+                      <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
                     </div>
                   </div>
-                  {selectedPlan === plan.id && <Check className="w-6 h-6 text-primary shrink-0" />}
-                </div>
-                <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-2xl font-display font-bold text-foreground">
-                    {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
-                  </span>
-                  {setup.currency !== setup.homeCurrency && (
-                    <span className="text-sm text-muted-foreground">
-                      ({setup.currency}{plan.totalBudget.toLocaleString()})
-                    </span>
-                  )}
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
-                  <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
-                  <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
                 </div>
               </motion.button>
             ))}
