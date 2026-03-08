@@ -161,18 +161,20 @@ Rules:
 - Each place should have a Google Maps search URL as mapUrl
 - Use Unsplash image URLs for imageUrl (https://source.unsplash.com/400x300/?search+terms)`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${GROQ_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: "You are a travel planning AI. Return ONLY valid JSON, no markdown formatting, no code blocks." },
           { role: "user", content: prompt },
         ],
+        temperature: 0.7,
+        max_tokens: 8000,
       }),
     });
 
