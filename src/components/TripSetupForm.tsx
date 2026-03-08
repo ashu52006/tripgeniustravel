@@ -30,7 +30,6 @@ interface TripSetupFormProps {
   homeRegion: UserRegion;
   onSubmit: (setup: TripSetup) => void;
   onBack: () => void;
-  userPlan?: string;
 }
 
 export default function TripSetupForm({ homeRegion, onSubmit, onBack, userPlan = 'basic' }: TripSetupFormProps) {
