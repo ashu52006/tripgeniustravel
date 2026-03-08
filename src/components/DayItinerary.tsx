@@ -251,16 +251,12 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                           {/* Place Image */}
                           <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border">
                             <img
-                              src={
-                                place.imageUrl && place.imageUrl.startsWith('http') && !place.imageUrl.includes('source.unsplash.com')
-                                  ? place.imageUrl
-                                  : `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`
-                              }
-                              alt={place.name}
+                              src={placeImages[place.id] || fallbackPlaceImage(place.name, `${dayPlan.day}-${i}`)}
+                              alt={`${place.name} photo`}
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
-                                const fallback = `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`;
+                                const fallback = fallbackPlaceImage(place.name, `${dayPlan.day}-${i}`);
                                 if ((e.currentTarget as HTMLImageElement).src !== fallback) {
                                   (e.currentTarget as HTMLImageElement).src = fallback;
                                 } else {
