@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -19,6 +19,7 @@ import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPlanConfig } from '@/lib/planLimits';
 import { toast } from 'sonner';
 
 type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe';

@@ -321,7 +321,7 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack, userPlan =
             <Button
               type="submit"
               size="lg"
-              disabled={!origin || !destination || !startDate || !endDate || days < 1}
+              disabled={!origin || !destination || !startDate || !endDate || days < 1 || days > maxDays}
               className="flex-1 h-14 text-lg bg-gradient-hero border-0 text-primary-foreground font-semibold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all"
             >
               <Plane className="w-5 h-5" />
