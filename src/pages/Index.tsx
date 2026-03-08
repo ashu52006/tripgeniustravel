@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2, FolderOpen } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2, FolderOpen, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -133,21 +133,12 @@ const Index = () => {
   };
 
   const handleExportPdf = () => {
-    if (!planConfig.canExportPdf) {
-      toast.error('PDF export is available on Gold plan and above. Upgrade to unlock!');
-      setStep('subscribe');
-      return;
-    }
     window.print();
     toast.success('Print dialog opened! Save as PDF from there.');
   };
 
   const handleEmailTrip = () => {
-    if (!planConfig.canEmailTrip || !plan) {
-      toast.error('Email sharing is available on Gold plan and above. Upgrade to unlock!');
-      setStep('subscribe');
-      return;
-    }
+    if (!plan) return;
     const subject = encodeURIComponent(`Trip Plan: ${plan.setup.origin} → ${plan.setup.destination}`);
     const body = encodeURIComponent(
       `Check out my trip plan!\n\n` +
@@ -156,7 +147,7 @@ const Index = () => {
       `👥 ${plan.setup.travelers} travelers\n` +
       `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
       `Day-by-day highlights:\n` +
-      plan.days.slice(0, planConfig.allDaysUnlocked ? plan.days.length : getFreeDays()).map(d =>
+      plan.days.map(d =>
         `Day ${d.day}: ${d.title} - ${d.places.map(p => p.name).join(', ')}`
       ).join('\n') +
       `\n\nPlanned with TripGenius ✈️`
@@ -165,26 +156,21 @@ const Index = () => {
     toast.success('Email composer opened!');
   };
 
-  const handleWhatsAppShare = () => {
-    if (!planConfig.canEmailTrip || !plan) {
-      toast.error('Sharing is available on Gold plan and above. Upgrade to unlock!');
-      setStep('subscribe');
-      return;
+  const handleShare = async () => {
+    if (!plan) return;
+    const shareText = `🌍 My Trip Plan\n📍 ${plan.setup.origin} → ${plan.setup.destination}\n📅 ${plan.days.length} days\n💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n✈️ Planned with TripGenius`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Trip: ${plan.setup.origin} → ${plan.setup.destination}`, text: shareText });
+        toast.success('Shared successfully!');
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Trip details copied to clipboard! 📋');
     }
-    const text = encodeURIComponent(
-      `🌍 *My Trip Plan*\n\n` +
-      `📍 ${plan.setup.origin} → ${plan.setup.destination}\n` +
-      `📅 ${plan.days.length} days starting ${plan.setup.startDate}\n` +
-      `👥 ${plan.setup.travelers} travelers\n` +
-      `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
-      `*Day-by-day highlights:*\n` +
-      plan.days.slice(0, planConfig.allDaysUnlocked ? plan.days.length : getFreeDays()).map(d =>
-        `📌 Day ${d.day}: ${d.title} - ${d.places.slice(0, 3).map(p => p.name).join(', ')}`
-      ).join('\n') +
-      `\n\n✈️ Planned with TripGenius`
-    );
-    window.open(`https://wa.me/?text=${text}`, '_blank');
-    toast.success('WhatsApp opened!');
   };
 
   const handleSaveTrip = async () => {
@@ -393,37 +379,15 @@ const Index = () => {
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
-                  {/* Action buttons for paid features */}
                   <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleExportPdf}
-                      className={`gap-1.5 rounded-xl ${!planConfig.canExportPdf ? 'opacity-50' : ''}`}
-                    >
-                      <Download className="w-4 h-4" />
-                      Export PDF
-                      {!planConfig.canExportPdf && <Crown className="w-3 h-3 text-warning" />}
+                    <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 rounded-xl">
+                      <Download className="w-4 h-4" /> Export PDF
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleEmailTrip}
-                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
-                    >
-                      <Mail className="w-4 h-4" />
-                      Email Trip
-                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    <Button variant="outline" size="sm" onClick={handleEmailTrip} className="gap-1.5 rounded-xl">
+                      <Mail className="w-4 h-4" /> Email Trip
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleWhatsAppShare}
-                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
-                    >
-                      <Share2 className="w-4 h-4" />
-                      WhatsApp
-                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5 rounded-xl">
+                      <Share2 className="w-4 h-4" /> Share
                     </Button>
                   </div>
                   {plan.days.map((day, i) => (
