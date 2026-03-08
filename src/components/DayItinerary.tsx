@@ -160,9 +160,19 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                               </span>
                             </div>
 
-                            {place.mapUrl && (
+                            {place.mapUrl ? (
                               <a
-                                href={place.mapUrl}
+                                href={place.mapUrl.startsWith('http') ? place.mapUrl : `https://www.google.com/maps/search/${encodeURIComponent(place.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
+                              >
+                                <MapPin className="w-3 h-3" /> View on Map
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <a
+                                href={`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
