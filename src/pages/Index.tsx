@@ -118,6 +118,8 @@ const Index = () => {
     }
   };
 
+  const planConfig = getPlanConfig(userPlan);
+
   // Free users see only first half of days
   const getFreeDays = () => {
     if (!plan) return 0;
@@ -125,8 +127,41 @@ const Index = () => {
   };
 
   const isLockedDay = (dayIndex: number) => {
-    if (userPlan !== 'basic') return false; // Paid users see all
+    if (planConfig.allDaysUnlocked) return false;
     return dayIndex >= getFreeDays();
+  };
+
+  const handleExportPdf = () => {
+    if (!planConfig.canExportPdf) {
+      toast.error('PDF export is available on Gold plan and above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+    window.print();
+    toast.success('Print dialog opened! Save as PDF from there.');
+  };
+
+  const handleEmailTrip = () => {
+    if (!planConfig.canEmailTrip || !plan) {
+      toast.error('Email sharing is available on Gold plan and above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+    const subject = encodeURIComponent(`Trip Plan: ${plan.setup.origin} → ${plan.setup.destination}`);
+    const body = encodeURIComponent(
+      `Check out my trip plan!\n\n` +
+      `📍 ${plan.setup.origin} → ${plan.setup.destination}\n` +
+      `📅 ${plan.days.length} days starting ${plan.setup.startDate}\n` +
+      `👥 ${plan.setup.travelers} travelers\n` +
+      `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
+      `Day-by-day highlights:\n` +
+      plan.days.slice(0, planConfig.allDaysUnlocked ? plan.days.length : getFreeDays()).map(d =>
+        `Day ${d.day}: ${d.title} - ${d.places.map(p => p.name).join(', ')}`
+      ).join('\n') +
+      `\n\nPlanned with TripGenius ✈️`
+    );
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+    toast.success('Email composer opened!');
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
