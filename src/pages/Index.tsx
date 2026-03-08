@@ -258,6 +258,7 @@ const Index = () => {
               homeRegion={homeRegion}
               onSubmit={handleTripSetup}
               onBack={() => setStep('region')}
+              userPlan={userPlan}
             />
           )}
 
