@@ -117,15 +117,15 @@ const Index = () => {
     }
   };
 
-  // Calculate how many days are free (half the itinerary)
+  // Free users see only first half of days
   const getFreeDays = () => {
     if (!plan) return 0;
     return Math.ceil(plan.days.length / 2);
   };
 
-  const isLockedDay = (_dayIndex: number) => {
-    // Admin mode: all days unlocked
-    return false;
+  const isLockedDay = (dayIndex: number) => {
+    if (userPlan !== 'basic') return false; // Paid users see all
+    return dayIndex >= getFreeDays();
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
