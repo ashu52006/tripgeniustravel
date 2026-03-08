@@ -34,7 +34,8 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, raw
       "highlights": ["Budget friendly", "Local experience"],
       "hotelType": "Hostel/Dormitory",
       "foodType": "Street food & local joints",
-      "transportType": "Public transport only"
+      "transportType": "Public transport only",
+      "imageKeyword": "hostel backpacker travel"
     }
   ]
 }
