@@ -45,7 +45,51 @@ interface DayItineraryProps {
 
 export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked, onSubscribe }: DayItineraryProps) {
   const [expanded, setExpanded] = useState(!isLocked);
+  const [placeImages, setPlaceImages] = useState<Record<string, string>>({});
   const showDual = homeCurrency && homeCurrency !== currency;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPlaceImages = async () => {
+      const imageEntries = await Promise.all(
+        dayPlan.places.map(async (place, index) => {
+          const existingImage = place.imageUrl;
+          if (
+            existingImage &&
+            existingImage.startsWith('http') &&
+            !existingImage.includes('source.unsplash.com') &&
+            !existingImage.includes('loremflickr.com')
+          ) {
+            return [place.id, existingImage] as const;
+          }
+
+          const searchQueries = [
+            place.name,
+            `${place.name} ${place.category}`,
+            `${place.name} ${dayPlan.title}`,
+          ];
+
+          for (const query of searchQueries) {
+            const wikiImage = await resolveWikipediaPlaceImage(query);
+            if (wikiImage) return [place.id, wikiImage] as const;
+          }
+
+          return [place.id, fallbackPlaceImage(place.name, `${dayPlan.day}-${index}`)] as const;
+        })
+      );
+
+      if (!cancelled) {
+        setPlaceImages(Object.fromEntries(imageEntries));
+      }
+    };
+
+    loadPlaceImages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dayPlan.day, dayPlan.title, dayPlan.places]);
 
   if (isLocked) {
     return (
