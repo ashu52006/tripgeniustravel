@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Wallet, Sparkles, ArrowRight, ArrowLeft, Check, Loader2, DollarSign } from 'lucide-react';
+import { Wallet, ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { TripSetup, BudgetPlanOption, regionCurrencies } from '@/types/trip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import BackgroundCarousel from './BackgroundCarousel';
 
 interface BudgetPlansPageProps {
   setup: TripSetup;
@@ -25,11 +25,9 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [customBudget, setCustomBudget] = useState('');
 
   const homeCurrency = regionCurrencies[setup.homeRegion];
 
-  // Auto-fetch budget plans on mount
   useEffect(() => {
     fetchBudgetPlans();
   }, []);
@@ -81,10 +79,10 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
         totalBudget: total,
         totalBudgetHome: total,
         description: ['Minimal spending, hostels', 'Budget hotels, local food', 'Clean stays, street food', 'Mid-range all around', 'Comfortable with extras', 'Nice hotels, good food', '4-star experience', 'Luxury hotels, fine dining', 'Top tier everything', 'No expense spared'][i],
-        highlights: ['Basic', 'Value', 'Smart savings', 'Well-rounded', 'Comfortable', 'Treat yourself', 'Premium quality', 'High end', 'Ultra premium', 'Best of best'].slice(i, i + 2),
-        hotelType: ['Hostel', 'Budget hotel', '2-star', '3-star', '3-star+', '4-star', '4-star+', '5-star', '5-star deluxe', 'Palace/Resort'][i],
+        highlights: [],
+        hotelType: ['Hostel', 'Budget hotel', '2-star', '3-star', '3-star+', '4-star', '4-star+', '5-star', '5-star deluxe', 'Palace'][i],
         foodType: ['Street food', 'Local joints', 'Mix', 'Good restaurants', 'Nice restaurants', 'Fine dining mix', 'Fine dining', 'Gourmet', 'Michelin-level', 'Private chef'][i],
-        transportType: ['Public', 'Public+auto', 'Mix', 'Taxi/auto', 'Taxi', 'Private car', 'Private car+', 'Luxury car', 'Chauffeur', 'Private jet lol'][i],
+        transportType: ['Public', 'Public+auto', 'Mix', 'Taxi/auto', 'Taxi', 'Private car', 'Private car+', 'Luxury car', 'Chauffeur', 'Limo'][i],
       };
     });
     setPlans(mockPlans);
@@ -97,179 +95,85 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
     onSelectBudget(plan.totalBudgetHome);
   };
 
-  const handleCustomBudget = () => {
-    if (!customBudget || isNaN(Number(customBudget))) return;
-    onSelectBudget(Number(customBudget));
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen px-4 py-12"
-    >
-      {/* Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-ocean" />
-        {[...Array(5)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: 150 + i * 60,
-              height: 150 + i * 60,
-              background: `radial-gradient(circle, hsl(170 80% 45% / ${0.05 + i * 0.02}), transparent)`,
-              left: `${5 + i * 20}%`,
-              top: `${10 + i * 15}%`,
-            }}
-            animate={{ scale: [1, 1.2, 1], y: [0, -20, 0] }}
-            transition={{ duration: 4 + i, repeat: Infinity }}
-          />
-        ))}
-      </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen px-4 py-12">
+      <BackgroundCarousel />
 
       <div className="relative z-10 max-w-5xl mx-auto pt-16">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2, repeat: Infinity }}>
             <Wallet className="w-12 h-12 text-primary mx-auto mb-3" />
           </motion.div>
-          <h1 className="text-3xl md:text-4xl font-display font-bold text-gradient-hero mb-2">
-            Choose Your Budget
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold text-gradient-hero mb-2">Choose Your Budget</h1>
           <p className="text-muted-foreground">
             {setup.origin} → {setup.destination} • {setup.days} days • {setup.travelers} traveler(s)
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            All prices shown in {homeCurrency.code} ({homeCurrency.symbol})
-            {setup.currency !== setup.homeCurrency && ` & destination currency (${setup.currency})`}
+            All prices in {homeCurrency.code} ({homeCurrency.symbol})
+            {setup.currency !== setup.homeCurrency && ` & ${setup.currency}`}
           </p>
         </motion.div>
 
         {loading && !loaded && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-20"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
             <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
             <p className="text-lg text-muted-foreground">Analyzing budget options...</p>
-            <div className="flex gap-2 mt-4 justify-center">
-              {['🏨', '✈️', '🍽️', '🎫', '🚕'].map((emoji, i) => (
-                <motion.span
-                  key={i}
-                  className="text-2xl"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.2 }}
-                >
-                  {emoji}
-                </motion.span>
-              ))}
-            </div>
           </motion.div>
         )}
 
         {loaded && (
-          <>
-            {/* Budget Plans Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {plans.map((plan, i) => (
-                <motion.button
-                  key={plan.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => handleSelect(plan)}
-                  className={`glass rounded-2xl p-5 text-left transition-all duration-300 border-2 ${
-                    selectedPlan === plan.id
-                      ? 'border-primary shadow-glow bg-primary/5'
-                      : `${planColors[i]} hover:border-primary/40 hover:shadow-card`
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl">{planIcons[i]}</span>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                            Level {plan.level}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            {plans.map((plan, i) => (
+              <motion.button
+                key={plan.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => handleSelect(plan)}
+                className={`glass rounded-2xl p-5 text-left transition-all duration-300 border-2 ${
+                  selectedPlan === plan.id
+                    ? 'border-primary shadow-glow bg-primary/5'
+                    : `${planColors[i]} hover:border-primary/40 hover:shadow-card`
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{planIcons[i]}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                          Level {plan.level}
+                        </span>
                       </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
                     </div>
-                    {selectedPlan === plan.id && (
-                      <Check className="w-6 h-6 text-primary shrink-0" />
-                    )}
                   </div>
-
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <span className="text-2xl font-display font-bold text-foreground">
-                      {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
-                    </span>
-                    {setup.currency !== setup.homeCurrency && (
-                      <span className="text-sm text-muted-foreground">
-                        ({setup.currency}{plan.totalBudget.toLocaleString()})
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                    <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
-                    <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
-                    <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Custom Budget */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="glass rounded-2xl p-6 mb-8"
-            >
-              <h3 className="font-display font-bold text-foreground mb-3 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-primary" />
-                Or Enter Your Own Budget ({homeCurrency.code})
-              </h3>
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold">
-                    {setup.homeCurrency}
-                  </span>
-                  <Input
-                    type="number"
-                    value={customBudget}
-                    onChange={(e) => setCustomBudget(e.target.value)}
-                    placeholder="Enter amount..."
-                    className="h-12 pl-10 bg-secondary/50 border-border rounded-xl text-lg"
-                  />
+                  {selectedPlan === plan.id && <Check className="w-6 h-6 text-primary shrink-0" />}
                 </div>
-                <Button
-                  onClick={handleCustomBudget}
-                  disabled={!customBudget}
-                  className="h-12 px-6 bg-gradient-hero border-0 text-primary-foreground rounded-xl gap-2"
-                >
-                  Use This Budget
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </motion.div>
-          </>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-2xl font-display font-bold text-foreground">
+                    {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
+                  </span>
+                  {setup.currency !== setup.homeCurrency && (
+                    <span className="text-sm text-muted-foreground">
+                      ({setup.currency}{plan.totalBudget.toLocaleString()})
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
+                  <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
+                  <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
+                </div>
+              </motion.button>
+            ))}
+          </div>
         )}
 
         <div className="flex justify-center">
           <Button variant="outline" onClick={onBack} className="rounded-xl gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Trip Details
+            <ArrowLeft className="w-4 h-4" /> Back to Trip Details
           </Button>
         </div>
       </div>
