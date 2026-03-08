@@ -232,14 +232,9 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className={`glass-highlight rounded-xl p-3 text-center text-sm font-semibold ${days > maxDays ? 'text-destructive border border-destructive/50' : 'text-primary'}`}
+              className="glass-highlight rounded-xl p-3 text-center text-sm font-semibold text-primary"
             >
               ✈️ Trip Duration: {days} {days === 1 ? 'day' : 'days'}
-              {days > maxDays && (
-                <span className="block text-xs mt-1">
-                  Your plan supports up to {maxDays} days. Upgrade for longer trips!
-                </span>
-              )}
             </motion.div>
           )}
 
