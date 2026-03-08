@@ -252,6 +252,18 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="sm"
+                onClick={handleSaveTrip}
+                className="gap-1"
+              >
+                <Save className="w-4 h-4" />
+                Save
+                {planConfig.savedTripsLimit === 0 && <Crown className="w-3 h-3 text-warning" />}
+              </Button>
+            )}
+            {step === 'plan' && (
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setStep('subscribe')}
                 className="text-warning gap-1"
               >
