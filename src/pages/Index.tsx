@@ -289,6 +289,29 @@ const Index = () => {
               {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
+                  {/* Action buttons for paid features */}
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPdf}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canExportPdf ? 'opacity-50' : ''}`}
+                    >
+                      <Download className="w-4 h-4" />
+                      Export PDF
+                      {!planConfig.canExportPdf && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEmailTrip}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
+                    >
+                      <Mail className="w-4 h-4" />
+                      Email Trip
+                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
+                  </div>
                   {plan.days.map((day, i) => (
                     <DayItinerary
                       key={day.day}
