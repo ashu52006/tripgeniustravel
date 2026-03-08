@@ -186,14 +186,21 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                           {/* Place Image */}
                           <div className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-border">
                             <img
-                              src={place.imageUrl && place.imageUrl.startsWith('http') && !place.imageUrl.includes('source.unsplash.com')
-                                ? place.imageUrl
-                                : `https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=200&h=200&fit=crop&auto=format&q=60`}
+                              src={
+                                place.imageUrl && place.imageUrl.startsWith('http') && !place.imageUrl.includes('source.unsplash.com')
+                                  ? place.imageUrl
+                                  : `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`
+                              }
                               alt={place.name}
                               className="w-full h-full object-cover"
                               loading="lazy"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
+                                const fallback = `https://loremflickr.com/200/200/${place.name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${dayPlan.day}-${i}`;
+                                if ((e.currentTarget as HTMLImageElement).src !== fallback) {
+                                  (e.currentTarget as HTMLImageElement).src = fallback;
+                                } else {
+                                  (e.currentTarget as HTMLImageElement).style.display = 'none';
+                                }
                               }}
                             />
                           </div>
