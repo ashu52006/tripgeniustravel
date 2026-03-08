@@ -272,6 +272,17 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {user && (step === 'region' || step === 'setup' || step === 'plan') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('saved-trips')}
+                className="gap-1"
+              >
+                <FolderOpen className="w-4 h-4" />
+                My Trips
+              </Button>
+            )}
             {step === 'plan' && (
               <Button
                 variant="ghost"
