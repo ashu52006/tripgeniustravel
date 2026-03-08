@@ -20,6 +20,30 @@ const planColors = [
   'border-warning/50', 'border-warning/70', 'border-success/60',
 ];
 
+// Unique curated image keywords per tier to avoid repeating images
+const planImageKeywords = [
+  'backpacker hostel dorm',
+  'budget hotel room',
+  'economy travel suitcase',
+  'city hotel lobby',
+  'comfortable resort pool',
+  'premium suite view',
+  'deluxe spa luxury',
+  'luxury villa ocean',
+  'ultra luxury penthouse',
+  'royal palace suite',
+];
+
+const getPlanBadge = (level: number, totalPlans: number) => {
+  if (level <= 2) return { label: '⚠️ Not Recommended', className: 'bg-destructive/15 text-destructive border-destructive/30' };
+  if (level === 3) return { label: '💰 Budget Pick', className: 'bg-accent/15 text-accent border-accent/30' };
+  if (level === 4 || level === 5) return { label: '⭐ Recommended', className: 'bg-primary/15 text-primary border-primary/30' };
+  if (level === 6) return { label: '🏆 Best for Your Trip', className: 'bg-warning/20 text-warning border-warning/40' };
+  if (level === 7) return { label: '💎 Premium Choice', className: 'bg-primary/15 text-primary border-primary/30' };
+  if (level >= 8) return { label: '👑 Splurge', className: 'bg-muted text-muted-foreground border-border' };
+  return null;
+};
+
 export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: BudgetPlansPageProps) {
   const [plans, setPlans] = useState<BudgetPlanOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -133,68 +157,79 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
         {loaded && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {plans.map((plan, i) => (
-              <motion.button
-                key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-                onClick={() => handleSelect(plan)}
-                className={`glass rounded-2xl p-5 text-left transition-all duration-300 border-2 ${
-                  selectedPlan === plan.id
-                    ? 'border-primary shadow-glow bg-primary/5'
-                    : `${planColors[i]} hover:border-primary/40 hover:shadow-card`
-                }`}
-              >
-                <div className="flex gap-4">
-                  {/* Plan Image */}
-                  <div className="shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border">
-                    <img
-                      src={`https://loremflickr.com/200/200/${`${setup.destination} ${(plan as any).imageKeyword || plan.name}`
-                        .toLowerCase()
-                        .replace(/[^a-z0-9\s]/g, '')
-                        .trim()
-                        .replace(/\s+/g, ',') || 'travel,destination'}?lock=${i + 1}`}
-                      alt={`${plan.name} in ${setup.destination}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl">{planIcons[i]}</span>
-                          <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                            Level {plan.level}
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
+              (() => {
+                const badge = getPlanBadge(plan.level, plans.length);
+                const isBestPlan = plan.level === 6;
+                return (
+                  <motion.button
+                    key={plan.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => handleSelect(plan)}
+                    className={`glass rounded-2xl p-5 text-left transition-all duration-300 border-2 relative ${
+                      selectedPlan === plan.id
+                        ? 'border-primary shadow-glow bg-primary/5'
+                        : isBestPlan
+                        ? 'border-warning shadow-glow'
+                        : `${planColors[i]} hover:border-primary/40 hover:shadow-card`
+                    }`}
+                  >
+                    {/* Recommendation Badge */}
+                    {badge && (
+                      <div className={`absolute -top-3 left-4 px-3 py-0.5 rounded-full text-xs font-bold border ${badge.className}`}>
+                        {badge.label}
                       </div>
-                      {selectedPlan === plan.id && <Check className="w-6 h-6 text-primary shrink-0" />}
+                    )}
+
+                    <div className="flex gap-4 mt-1">
+                      {/* Plan Image - unique per tier */}
+                      <div className="shrink-0 w-24 h-24 rounded-xl overflow-hidden border border-border">
+                        <img
+                          src={`https://picsum.photos/seed/${encodeURIComponent(setup.destination + '-' + (planImageKeywords[i] || plan.name))}/200/200`}
+                          alt={`${plan.name} in ${setup.destination}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{planIcons[i]}</span>
+                              <h3 className="font-display font-bold text-foreground">{plan.name}</h3>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                Level {plan.level}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-0.5">{plan.description}</p>
+                          </div>
+                          {selectedPlan === plan.id && <Check className="w-6 h-6 text-primary shrink-0" />}
+                        </div>
+                        <div className="mt-2 flex items-baseline gap-2">
+                          <span className="text-2xl font-display font-bold text-foreground">
+                            {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
+                          </span>
+                          {setup.currency !== setup.homeCurrency && (
+                            <span className="text-sm text-muted-foreground">
+                              ({setup.currency}{plan.totalBudget.toLocaleString()})
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
+                          <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
+                          <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-2 flex items-baseline gap-2">
-                      <span className="text-2xl font-display font-bold text-foreground">
-                        {setup.homeCurrency}{plan.totalBudgetHome.toLocaleString()}
-                      </span>
-                      {setup.currency !== setup.homeCurrency && (
-                        <span className="text-sm text-muted-foreground">
-                          ({setup.currency}{plan.totalBudget.toLocaleString()})
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span className="glass-highlight rounded-full px-2 py-1">🏨 {plan.hotelType}</span>
-                      <span className="glass-highlight rounded-full px-2 py-1">🍽️ {plan.foodType}</span>
-                      <span className="glass-highlight rounded-full px-2 py-1">🚗 {plan.transportType}</span>
-                    </div>
-                  </div>
-                </div>
-              </motion.button>
+                  </motion.button>
+                );
+              })()
             ))}
           </div>
         )}
