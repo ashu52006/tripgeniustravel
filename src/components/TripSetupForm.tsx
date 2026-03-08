@@ -48,11 +48,16 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack, userPlan =
 
   const destCurrency = destination ? getCurrencyForDestination(destination) : homeCurrency;
 
+  const planConfig = getPlanConfig(userPlan);
+  const maxDays = planConfig.maxDays;
   const days = startDate && endDate ? differenceInDays(endDate, startDate) + 1 : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!origin || !destination || !startDate || !endDate || days < 1) return;
+    if (days > maxDays) {
+      return;
+    }
     const setup: TripSetup = {
       origin, destination, days,
       startDate: format(startDate, 'yyyy-MM-dd'),
