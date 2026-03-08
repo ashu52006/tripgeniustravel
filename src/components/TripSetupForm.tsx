@@ -32,7 +32,7 @@ interface TripSetupFormProps {
   onBack: () => void;
 }
 
-export default function TripSetupForm({ homeRegion, onSubmit, onBack, userPlan = 'basic' }: TripSetupFormProps) {
+export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetupFormProps) {
   const { t } = useLanguage();
   const homeCurrency = regionCurrencies[homeRegion];
 
