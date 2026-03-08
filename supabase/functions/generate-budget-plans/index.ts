@@ -48,7 +48,8 @@ Rules:
 - Include flights (${origin} to ${destination} and back), hotels, food, transport, activities
 - Use REALISTIC current prices for ${destination}
 - Each plan should be meaningfully different (not just +10%)
-- Budget should roughly double from plan 1 to plan 10`;
+- Budget should roughly double from plan 1 to plan 10
+- imageKeyword: 2-3 words describing the travel style for that tier (e.g. "hostel backpacker", "luxury resort pool", "boutique hotel rooftop")`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
