@@ -11,8 +11,8 @@ serve(async (req) => {
   try {
     const { origin, destination, days, travelers, userBudget, currency, homeCurrency, homeCurrencyCode, destCurrencySymbol, style, pace, startDate } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
 
     const prompt = `You are an expert travel planner. Create a detailed ${days}-day trip itinerary for ${travelers} traveler(s) from ${origin} to ${destination}.
 
