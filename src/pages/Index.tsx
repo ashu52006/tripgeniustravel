@@ -244,7 +244,7 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe') && (
+            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe' || step === 'saved-trips') && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -253,6 +253,7 @@ const Index = () => {
                   else if (step === 'budget') setStep('setup');
                   else if (step === 'setup') setStep('region');
                   else if (step === 'subscribe') setStep('plan');
+                  else if (step === 'saved-trips') setStep('region');
                 }}
                 className="text-muted-foreground"
               >
