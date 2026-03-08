@@ -20,7 +20,7 @@ const fallbackPlaceImage = (placeName: string, seed: string) =>
 const resolveWikipediaPlaceImage = async (query: string): Promise<string | null> => {
   try {
     const response = await fetch(
-      `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=1&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
+      `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=3&prop=pageimages&piprop=thumbnail&pithumbsize=400&format=json&origin=*`
     );
 
     if (!response.ok) return null;
@@ -33,6 +33,14 @@ const resolveWikipediaPlaceImage = async (query: string): Promise<string | null>
   } catch {
     return null;
   }
+};
+
+// Extract clean place name by removing prefixes like "Lunch at", "Dinner at", "Optional:", parenthetical info
+const cleanPlaceName = (name: string): string => {
+  return name
+    .replace(/^(Lunch at|Dinner at|Breakfast at|Optional:|Visit|Explore|Tour)\s*/i, '')
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .trim();
 };
 
 interface DayItineraryProps {
