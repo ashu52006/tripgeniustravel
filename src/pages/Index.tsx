@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -162,6 +162,28 @@ const Index = () => {
     );
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
     toast.success('Email composer opened!');
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!planConfig.canEmailTrip || !plan) {
+      toast.error('Sharing is available on Gold plan and above. Upgrade to unlock!');
+      setStep('subscribe');
+      return;
+    }
+    const text = encodeURIComponent(
+      `🌍 *My Trip Plan*\n\n` +
+      `📍 ${plan.setup.origin} → ${plan.setup.destination}\n` +
+      `📅 ${plan.days.length} days starting ${plan.setup.startDate}\n` +
+      `👥 ${plan.setup.travelers} travelers\n` +
+      `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
+      `*Day-by-day highlights:*\n` +
+      plan.days.slice(0, planConfig.allDaysUnlocked ? plan.days.length : getFreeDays()).map(d =>
+        `📌 Day ${d.day}: ${d.title} - ${d.places.slice(0, 3).map(p => p.name).join(', ')}`
+      ).join('\n') +
+      `\n\n✈️ Planned with TripGenius`
+    );
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+    toast.success('WhatsApp opened!');
   };
 
   const handleSaveTrip = async () => {
@@ -367,6 +389,16 @@ const Index = () => {
                     >
                       <Mail className="w-4 h-4" />
                       Email Trip
+                      {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleWhatsAppShare}
+                      className={`gap-1.5 rounded-xl ${!planConfig.canEmailTrip ? 'opacity-50' : ''}`}
+                    >
+                      <Share2 className="w-4 h-4" />
+                      WhatsApp
                       {!planConfig.canEmailTrip && <Crown className="w-3 h-3 text-warning" />}
                     </Button>
                   </div>

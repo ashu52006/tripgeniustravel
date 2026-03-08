@@ -14,7 +14,7 @@ serve(async (req) => {
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
 
-    const prompt = `You are a travel budget expert. Generate exactly 10 budget plan options for a trip.
+    const prompt = `You are a travel budget expert with deep knowledge of REAL travel costs. Generate exactly 10 budget plan options for a trip.
 
 Trip: ${origin} to ${destination}, ${days} days, ${travelers} travelers
 Style: ${style} | Pace: ${pace} | Start: ${startDate}
@@ -40,15 +40,19 @@ Return a JSON object with this EXACT structure (no markdown, no code blocks, raw
   ]
 }
 
-Rules:
+CRITICAL PRICING RULES:
 - Generate exactly 10 plans from cheapest (level 1) to most expensive (level 10)
 - Plan names: Backpacker, Budget, Economy, Standard, Comfort, Premium, Deluxe, Luxury, Ultra Luxury, Royal
 - totalBudget is in ${destCurrency}, totalBudgetHome is in ${homeCurrency}
 - All budgets must be TOTAL for ${travelers} travelers over ${days} days
-- Include flights (${origin} to ${destination} and back), hotels, food, transport, activities
-- Use REALISTIC current prices for ${destination}
-- Each plan should be meaningfully different (not just +10%)
-- Budget should roughly double from plan 1 to plan 10
+- MUST include round-trip international flights (${origin} to ${destination} and back) — research REAL current airfare prices. For example, India to USA round trip economy is ₹60,000-₹1,50,000 per person, India to Europe is ₹40,000-₹1,00,000 per person.
+- MUST include hotels/accommodation for ALL ${days} nights
+- MUST include food (3 meals/day), local transport, activities, visa fees if applicable
+- Use REALISTIC 2024-2025 prices — do NOT underestimate. Cross-check: a budget trip from India to USA for 1 person for 15 days costs at MINIMUM ₹2,50,000-₹3,00,000 total.
+- Each plan should be meaningfully different in quality and cost
+- The cheapest plan should still be REALISTIC (not impossibly cheap)
+- Budget should roughly 3-4x from plan 1 to plan 10 for international trips
+- For domestic trips, budget should roughly 2-3x from plan 1 to plan 10
 - imageKeyword: 2-3 words describing the travel style for that tier`;
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
