@@ -234,7 +234,10 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                             </div>
 
                             <a
-                              href={`https://www.google.com/maps/search/${encodeURIComponent(place.name)}`}
+                              href={place.mapUrl && place.mapUrl.startsWith('http')
+                                ? place.mapUrl
+                                : `https://www.google.com/maps/search/${encodeURIComponent(cleanPlaceName(place.name) + ' ' + (dayPlan.title?.replace(/^(Arrival in|Departure from|Exploring)\s*/i, '') || ''))}`
+                              }
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
