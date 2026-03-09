@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from './HeroCarousel';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { reviews } from '@/data/reviews';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -10,6 +12,15 @@ interface LandingPageProps {
 
 export default function LandingPage({ onGetStarted }: LandingPageProps) {
   const { t } = useLanguage();
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+
+  // Auto-rotate reviews
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const features = [
     { icon: <Sparkles className="w-6 h-6" />, title: 'AI-Powered Plans', desc: 'Smart itineraries tailored to your style' },
@@ -17,6 +28,11 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
     { icon: <MapPin className="w-6 h-6" />, title: 'Connected Routes', desc: 'Place-to-place distances with taxi fares' },
     { icon: <Plane className="w-6 h-6" />, title: 'Full Journey', desc: 'Flights, hotels, activities — all included' },
   ];
+
+  // Show 3 reviews at a time
+  const visibleReviews = [0, 1, 2].map(
+    (offset) => reviews[(currentReviewIndex + offset) % reviews.length]
+  );
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -40,7 +56,6 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
             }}
           />
         ))}
-        {/* Plane animation */}
         <motion.div
           className="absolute top-1/3"
           animate={{
@@ -120,23 +135,60 @@ export default function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
         </div>
 
-        {/* Testimonials */}
-        <div className="max-w-3xl mx-auto px-4 pb-20">
+        {/* Reviews Section */}
+        <div className="max-w-6xl mx-auto px-4 pb-20">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.8 }}
-            className="glass rounded-2xl p-8 text-center"
           >
-            <div className="flex justify-center gap-1 mb-3">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 fill-warning text-warning" />
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground text-center mb-2">
+              Loved by Travelers Worldwide
+            </h2>
+            <p className="text-muted-foreground text-center mb-8">
+              {reviews.length}+ happy travelers and counting
+            </p>
+
+            {/* Rotating review cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {visibleReviews.map((review, i) => (
+                <motion.div
+                  key={`${review.name}-${currentReviewIndex}-${i}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5, delay: i * 0.1 }}
+                  className="glass rounded-2xl p-6"
+                >
+                  <div className="flex gap-0.5 mb-3">
+                    {[...Array(5)].map((_, j) => (
+                      <Star key={j} className="w-4 h-4 fill-warning text-warning" />
+                    ))}
+                  </div>
+                  <p className="text-foreground text-sm italic mb-3 leading-relaxed">
+                    "{review.comment}"
+                  </p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    — {review.name}, {review.location}
+                  </p>
+                </motion.div>
               ))}
             </div>
-            <p className="text-foreground italic font-display text-lg mb-3">
-              "TripGenius planned our entire Bali trip in seconds. The dual currency display saved us from budget confusion!"
-            </p>
-            <p className="text-sm text-muted-foreground">— Priya S., Hyderabad</p>
+
+            {/* Dot indicators */}
+            <div className="flex justify-center gap-1.5">
+              {Array.from({ length: Math.min(10, Math.ceil(reviews.length / 3)) }).map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCurrentReviewIndex(i * 3)}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    Math.floor(currentReviewIndex / 3) % 10 === i
+                      ? 'bg-primary w-6'
+                      : 'bg-muted-foreground/30'
+                  }`}
+                />
+              ))}
+            </div>
           </motion.div>
         </div>
       </div>
