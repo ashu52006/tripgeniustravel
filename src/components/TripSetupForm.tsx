@@ -1,23 +1,31 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { MapPin, Calendar, Users, Compass, Gauge, ArrowRight, Plane, Navigation } from 'lucide-react';
-import { format, differenceInDays, addDays } from 'date-fns';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MapPin, Calendar, Users, Gauge, ArrowRight, Plane, Navigation, Search, User, Baby } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { TripSetup, TravelStyle, TravelPace, UserRegion, regionCurrencies } from '@/types/trip';
+import { TripSetup, TripType, TravelPace, UserRegion, regionCurrencies } from '@/types/trip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getCurrencyForDestination } from '@/lib/currencies';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import type { DateRange } from 'react-day-picker';
 
-const styles: { value: TravelStyle; labelKey: string; icon: string }[] = [
-  { value: 'budget', labelKey: 'budget_label', icon: '💰' },
-  { value: 'balanced', labelKey: 'balanced', icon: '⚖️' },
-  { value: 'luxury', labelKey: 'luxury', icon: '✨' },
-  { value: 'adventure', labelKey: 'adventure', icon: '🏔️' },
-  { value: 'cultural', labelKey: 'cultural', icon: '🏛️' },
+interface CitySuggestion {
+  city: string;
+  country: string;
+  type: string;
+}
+
+const tripTypes: { value: TripType; label: string; icon: string }[] = [
+  { value: 'solo', label: 'Solo', icon: '🧑' },
+  { value: 'couple', label: 'Couple', icon: '💑' },
+  { value: 'family', label: 'Family', icon: '👨‍👩‍👧' },
+  { value: 'group', label: 'Group', icon: '👥' },
+  { value: 'business', label: 'Business', icon: '💼' },
 ];
 
 const paces: { value: TravelPace; labelKey: string; descKey: string }[] = [
@@ -32,40 +40,139 @@ interface TripSetupFormProps {
   onBack: () => void;
 }
 
+function useCitySuggestions() {
+  const [suggestions, setSuggestions] = useState<CitySuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const search = useCallback((query: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (query.length < 2) { setSuggestions([]); return; }
+
+    setLoading(true);
+    timerRef.current = setTimeout(async () => {
+      try {
+        const { data } = await supabase.functions.invoke('suggest-cities', { body: { query } });
+        setSuggestions(data?.suggestions || []);
+      } catch {
+        setSuggestions([]);
+      }
+      setLoading(false);
+    }, 300);
+  }, []);
+
+  const clear = useCallback(() => setSuggestions([]), []);
+
+  return { suggestions, loading, search, clear };
+}
+
 export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetupFormProps) {
   const { t } = useLanguage();
   const homeCurrency = regionCurrencies[homeRegion];
 
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
-  const [startDate, setStartDate] = useState<Date | undefined>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
-  const [travelers, setTravelers] = useState(2);
-  const [style, setStyle] = useState<TravelStyle>('balanced');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [maleCount, setMaleCount] = useState(1);
+  const [femaleCount, setFemaleCount] = useState(0);
+  const [kidsCount, setKidsCount] = useState(0);
+  const [tripType, setTripType] = useState<TripType>('solo');
   const [pace, setPace] = useState<TravelPace>('normal');
 
-  const destCurrency = destination ? getCurrencyForDestination(destination) : homeCurrency;
+  const [originFocused, setOriginFocused] = useState(false);
+  const [destFocused, setDestFocused] = useState(false);
 
+  const originSuggestions = useCitySuggestions();
+  const destSuggestions = useCitySuggestions();
+
+  const totalTravelers = maleCount + femaleCount + kidsCount;
+  const destCurrency = destination ? getCurrencyForDestination(destination) : homeCurrency;
+  const startDate = dateRange?.from;
+  const endDate = dateRange?.to;
   const days = startDate && endDate ? differenceInDays(endDate, startDate) + 1 : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!origin || !destination || !startDate || !endDate || days < 1) return;
+    if (!origin || !destination || !startDate || !endDate || days < 1 || totalTravelers < 1) return;
     const setup: TripSetup = {
       origin, destination, days,
       startDate: format(startDate, 'yyyy-MM-dd'),
       endDate: format(endDate, 'yyyy-MM-dd'),
-      travelers,
+      travelers: totalTravelers,
+      travelerBreakdown: { male: maleCount, female: femaleCount, kids: kidsCount },
       userBudget: 0,
       currency: destCurrency.symbol,
       currencyCode: destCurrency.code,
       homeCurrency: homeCurrency.symbol,
       homeCurrencyCode: homeCurrency.code,
       homeRegion,
-      style, pace,
+      tripType, pace,
     };
     onSubmit(setup);
   };
+
+  const typeIcons: Record<string, string> = { city: '🏙️', town: '🏘️', village: '🏡', region: '🗺️' };
+
+  const renderCityInput = (
+    label: string,
+    icon: React.ReactNode,
+    value: string,
+    setValue: (v: string) => void,
+    hook: ReturnType<typeof useCitySuggestions>,
+    focused: boolean,
+    setFocused: (v: boolean) => void,
+    placeholder: string,
+  ) => (
+    <div className="space-y-2 relative">
+      <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
+        {icon}
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          value={value}
+          onChange={(e) => { setValue(e.target.value); hook.search(e.target.value); }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setTimeout(() => setFocused(false), 200)}
+          placeholder={placeholder}
+          className="h-12 text-lg bg-secondary/50 border-border rounded-xl pr-10"
+          required
+        />
+        {hook.loading && <Search className="absolute right-3 top-3.5 w-5 h-5 text-muted-foreground animate-pulse" />}
+      </div>
+      <AnimatePresence>
+        {focused && hook.suggestions.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute z-50 top-full mt-1 w-full bg-popover border border-border rounded-xl shadow-elevated overflow-hidden"
+          >
+            {hook.suggestions.map((s, i) => (
+              <button
+                key={`${s.city}-${s.country}-${i}`}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setValue(`${s.city}, ${s.country}`);
+                  hook.clear();
+                  setFocused(false);
+                }}
+                className="w-full px-4 py-3 text-left hover:bg-secondary/60 flex items-center gap-3 transition-colors"
+              >
+                <span className="text-lg">{typeIcons[s.type] || '📍'}</span>
+                <div>
+                  <span className="font-medium text-foreground">{s.city}</span>
+                  <span className="text-sm text-muted-foreground ml-2">{s.country}</span>
+                </div>
+                <span className="ml-auto text-xs text-muted-foreground capitalize">{s.type}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 
   return (
     <motion.div
@@ -77,28 +184,19 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute inset-0 bg-gradient-ocean" />
-        {[...Array(4)].map((_, i) => (
+        {[...Array(3)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full opacity-10"
             style={{
-              width: 300 + i * 100,
-              height: 300 + i * 100,
-              background: `radial-gradient(circle, hsl(200 100% 55% / 0.2), transparent)`,
-              left: `${20 + i * 25}%`,
-              top: `${30 + i * 15}%`,
+              width: 300 + i * 100, height: 300 + i * 100,
+              background: `radial-gradient(circle, hsl(var(--primary) / 0.2), transparent)`,
+              left: `${20 + i * 25}%`, top: `${30 + i * 15}%`,
             }}
             animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.15, 0.05] }}
             transition={{ duration: 4 + i * 2, repeat: Infinity }}
           />
         ))}
-        {/* Water flow effect */}
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 h-32"
-          style={{ background: 'linear-gradient(to right, hsl(200 100% 55% / 0.1), hsl(170 80% 45% / 0.1), hsl(200 100% 55% / 0.1))' }}
-          animate={{ x: ['-20%', '20%', '-20%'] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
       </div>
 
       <motion.div
@@ -120,34 +218,22 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
         </div>
 
         <form onSubmit={handleSubmit} className="glass rounded-3xl p-8 space-y-6">
-          {/* Origin & Destination */}
+          {/* Origin & Destination with Autocomplete */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Navigation className="w-4 h-4 text-accent" />
-                From (Starting City)
-              </Label>
-              <Input
-                value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
-                placeholder="e.g. Hyderabad, Mumbai..."
-                className="h-12 text-lg bg-secondary/50 border-border rounded-xl"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <MapPin className="w-4 h-4 text-primary" />
-                {t('destination')}
-              </Label>
-              <Input
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder={t('destinationPlaceholder')}
-                className="h-12 text-lg bg-secondary/50 border-border rounded-xl"
-                required
-              />
-            </div>
+            {renderCityInput(
+              'From (Starting City)',
+              <Navigation className="w-4 h-4 text-accent" />,
+              origin, setOrigin, originSuggestions,
+              originFocused, setOriginFocused,
+              'e.g. Hyderabad, Mumbai...'
+            )}
+            {renderCityInput(
+              t('destination'),
+              <MapPin className="w-4 h-4 text-primary" />,
+              destination, setDestination, destSuggestions,
+              destFocused, setDestFocused,
+              t('destinationPlaceholder')
+            )}
           </div>
 
           {destination && destCurrency.code !== homeCurrency.code && (
@@ -161,71 +247,43 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             </motion.div>
           )}
 
-          {/* Start Date & End Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Calendar className="w-4 h-4 text-primary" />
-                Start Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full h-12 justify-start text-left font-normal bg-secondary/50 border-border rounded-xl",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "PPP") : "Pick start date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => {
-                      setStartDate(date);
-                      if (date && endDate && date > endDate) setEndDate(undefined);
-                    }}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
-                <Calendar className="w-4 h-4 text-primary" />
-                End Date
-              </Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full h-12 justify-start text-left font-normal bg-secondary/50 border-border rounded-xl",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "PPP") : "Pick end date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent
-                    mode="single"
-                    selected={endDate}
-                    onSelect={setEndDate}
-                    disabled={(date) => date < (startDate || new Date())}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          {/* Single Date Range Picker */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
+              <Calendar className="w-4 h-4 text-primary" />
+              Travel Dates
+            </Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full h-12 justify-start text-left font-normal bg-secondary/50 border-border rounded-xl",
+                    !dateRange?.from && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "MMM d, yyyy")} — {format(dateRange.to, "MMM d, yyyy")}
+                      </>
+                    ) : format(dateRange.from, "MMM d, yyyy")
+                  ) : "Pick start & end dates"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {days > 0 && (
@@ -238,39 +296,54 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             </motion.div>
           )}
 
-          {/* Travelers */}
-          <div className="space-y-2">
+          {/* Travelers Breakdown */}
+          <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
               <Users className="w-4 h-4 text-primary" />
-              {t('travelers')}
+              Travelers ({totalTravelers})
             </Label>
-            <div className="flex items-center gap-3">
-              <Button type="button" variant="outline" size="icon" onClick={() => setTravelers(Math.max(1, travelers - 1))} className="h-12 w-12 rounded-xl">-</Button>
-              <span className="text-2xl font-display font-bold text-foreground w-16 text-center">{travelers}</span>
-              <Button type="button" variant="outline" size="icon" onClick={() => setTravelers(Math.min(20, travelers + 1))} className="h-12 w-12 rounded-xl">+</Button>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Male', icon: <User className="w-4 h-4" />, value: maleCount, setValue: setMaleCount },
+                { label: 'Female', icon: <User className="w-4 h-4" />, value: femaleCount, setValue: setFemaleCount },
+                { label: 'Kids', icon: <Baby className="w-4 h-4" />, value: kidsCount, setValue: setKidsCount },
+              ].map((item) => (
+                <div key={item.label} className="glass-highlight rounded-xl p-3 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-2 text-xs font-medium text-muted-foreground">
+                    {item.icon} {item.label}
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                      onClick={() => item.setValue(Math.max(0, item.value - 1))}>-</Button>
+                    <span className="text-lg font-bold text-foreground w-8 text-center">{item.value}</span>
+                    <Button type="button" variant="outline" size="icon" className="h-8 w-8 rounded-lg"
+                      onClick={() => item.setValue(Math.min(10, item.value + 1))}>+</Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Travel Style */}
+          {/* Trip Type */}
           <div className="space-y-3">
             <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
-              <Compass className="w-4 h-4 text-primary" />
-              {t('travelStyle')}
+              <Plane className="w-4 h-4 text-primary" />
+              Trip Type
             </Label>
             <div className="grid grid-cols-5 gap-2">
-              {styles.map((s) => (
+              {tripTypes.map((tt) => (
                 <button
-                  key={s.value}
+                  key={tt.value}
                   type="button"
-                  onClick={() => setStyle(s.value)}
+                  onClick={() => setTripType(tt.value)}
                   className={`p-3 rounded-xl text-center transition-all border-2 ${
-                    style === s.value
+                    tripType === tt.value
                       ? 'border-primary bg-primary/10 shadow-glow'
                       : 'border-border bg-secondary/30 hover:border-primary/30'
                   }`}
                 >
-                  <span className="text-2xl block mb-1">{s.icon}</span>
-                  <span className="text-xs font-medium text-foreground">{t(s.labelKey)}</span>
+                  <span className="text-2xl block mb-1">{tt.icon}</span>
+                  <span className="text-xs font-medium text-foreground">{tt.label}</span>
                 </button>
               ))}
             </div>
@@ -309,7 +382,7 @@ export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetu
             <Button
               type="submit"
               size="lg"
-              disabled={!origin || !destination || !startDate || !endDate || days < 1}
+              disabled={!origin || !destination || !startDate || !endDate || days < 1 || totalTravelers < 1}
               className="flex-1 h-14 text-lg bg-gradient-hero border-0 text-primary-foreground font-semibold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all"
             >
               <Plane className="w-5 h-5" />

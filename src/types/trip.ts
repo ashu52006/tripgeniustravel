@@ -1,4 +1,4 @@
-export type TravelStyle = 'budget' | 'balanced' | 'luxury' | 'adventure' | 'cultural';
+export type TripType = 'solo' | 'couple' | 'family' | 'group' | 'business';
 export type TravelPace = 'relaxed' | 'normal' | 'fast';
 export type PlacePriority = 'must-visit' | 'recommended' | 'optional';
 export type CrowdLevel = 'low' | 'medium' | 'high';
@@ -26,6 +26,12 @@ export const regionCurrencies: Record<UserRegion, RegionCurrency> = {
   other: { code: 'USD', symbol: '$', name: 'US Dollar' },
 };
 
+export interface TravelerBreakdown {
+  male: number;
+  female: number;
+  kids: number;
+}
+
 export interface TripSetup {
   origin: string;
   destination: string;
@@ -33,13 +39,14 @@ export interface TripSetup {
   startDate: string;
   endDate: string;
   travelers: number;
+  travelerBreakdown: TravelerBreakdown;
   userBudget: number;
   currency: string;
   currencyCode: string;
   homeCurrency: string;
   homeCurrencyCode: string;
   homeRegion: UserRegion;
-  style: TravelStyle;
+  tripType: TripType;
   pace: TravelPace;
 }
 
