@@ -26,6 +26,12 @@ export const regionCurrencies: Record<UserRegion, RegionCurrency> = {
   other: { code: 'USD', symbol: '$', name: 'US Dollar' },
 };
 
+export interface TravelerBreakdown {
+  male: number;
+  female: number;
+  kids: number;
+}
+
 export interface TripSetup {
   origin: string;
   destination: string;
@@ -33,13 +39,14 @@ export interface TripSetup {
   startDate: string;
   endDate: string;
   travelers: number;
+  travelerBreakdown: TravelerBreakdown;
   userBudget: number;
   currency: string;
   currencyCode: string;
   homeCurrency: string;
   homeCurrencyCode: string;
   homeRegion: UserRegion;
-  style: TravelStyle;
+  tripType: TripType;
   pace: TravelPace;
 }
 
