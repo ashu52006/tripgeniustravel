@@ -69,6 +69,7 @@ const Index = () => {
           destination: finalSetup.destination,
           days: finalSetup.days,
           travelers: finalSetup.travelers,
+          travelerBreakdown: finalSetup.travelerBreakdown,
           userBudget: finalSetup.userBudget,
           currency: finalSetup.currencyCode,
           homeCurrency: finalSetup.homeCurrency,
@@ -76,8 +77,6 @@ const Index = () => {
           destCurrencySymbol: finalSetup.currency,
           tripType: finalSetup.tripType,
           pace: finalSetup.pace,
-          travelers: finalSetup.travelers,
-          travelerBreakdown: finalSetup.travelerBreakdown,
           startDate: finalSetup.startDate,
         },
       });
