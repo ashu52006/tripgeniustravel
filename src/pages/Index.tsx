@@ -74,8 +74,10 @@ const Index = () => {
           homeCurrency: finalSetup.homeCurrency,
           homeCurrencyCode: finalSetup.homeCurrencyCode,
           destCurrencySymbol: finalSetup.currency,
-          style: finalSetup.style,
+          tripType: finalSetup.tripType,
           pace: finalSetup.pace,
+          travelers: finalSetup.travelers,
+          travelerBreakdown: finalSetup.travelerBreakdown,
           startDate: finalSetup.startDate,
         },
       });

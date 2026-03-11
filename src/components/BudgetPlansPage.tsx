@@ -65,7 +65,7 @@ export default function BudgetPlansPage({ setup, onSelectBudget, onBack }: Budge
           destination: setup.destination,
           days: setup.days,
           travelers: setup.travelers,
-          style: setup.style,
+          tripType: setup.tripType,
           pace: setup.pace,
           startDate: setup.startDate,
           destCurrency: setup.currencyCode,
