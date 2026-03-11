@@ -9,72 +9,41 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { origin, destination, days, travelers, style, pace, startDate, destCurrency, homeCurrency, homeCurrencyCode } = await req.json();
+    const { origin, destination, days, travelers, tripType, pace, startDate, destCurrency, homeCurrency, homeCurrencyCode } = await req.json();
 
-    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
-    if (!GROQ_API_KEY) throw new Error("GROQ_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const prompt = `You are a travel budget expert with deep knowledge of REAL travel costs. Generate exactly 10 budget plan options for a trip.
+    const prompt = `Generate exactly 5 budget plans for: ${origin} to ${destination}, ${days} days, ${travelers} travelers, trip type: ${tripType}, pace: ${pace}, start: ${startDate}.
+Destination currency: ${destCurrency}, Home currency: ${homeCurrency} (${homeCurrencyCode}).
 
-Trip: ${origin} to ${destination}, ${days} days, ${travelers} travelers
-Style: ${style} | Pace: ${pace} | Start: ${startDate}
-Destination currency: ${destCurrency}
-Home currency: ${homeCurrency} (${homeCurrencyCode})
+Return ONLY valid JSON:
+{"plans":[{"id":"plan-1","name":"Backpacker","level":1,"totalBudget":0,"totalBudgetHome":0,"description":"Short desc","highlights":["highlight"],"hotelType":"Hostel","foodType":"Street food","transportType":"Public transport"}]}
 
-Return a JSON object with this EXACT structure (no markdown, no code blocks, raw JSON only):
-{
-  "plans": [
-    {
-      "id": "plan-1",
-      "name": "Backpacker",
-      "level": 1,
-      "totalBudget": 15000,
-      "totalBudgetHome": 15000,
-      "description": "Hostels, street food, public transport",
-      "highlights": ["Budget friendly", "Local experience"],
-      "hotelType": "Hostel/Dormitory",
-      "foodType": "Street food & local joints",
-      "transportType": "Public transport only",
-      "imageKeyword": "hostel backpacker travel"
-    }
-  ]
-}
+Plan names MUST be: Backpacker, Economy, Comfort, Premium, Luxury (levels 1-5).
+Include flights, hotels, food, transport, activities. Use REAL 2024-2025 prices. Both currencies.`;
 
-CRITICAL PRICING RULES:
-- Generate exactly 10 plans from cheapest (level 1) to most expensive (level 10)
-- Plan names: Backpacker, Budget, Economy, Standard, Comfort, Premium, Deluxe, Luxury, Ultra Luxury, Royal
-- totalBudget is in ${destCurrency}, totalBudgetHome is in ${homeCurrency}
-- All budgets must be TOTAL for ${travelers} travelers over ${days} days
-- MUST include round-trip international flights (${origin} to ${destination} and back) — research REAL current airfare prices. For example, India to USA round trip economy is ₹60,000-₹1,50,000 per person, India to Europe is ₹40,000-₹1,00,000 per person.
-- MUST include hotels/accommodation for ALL ${days} nights
-- MUST include food (3 meals/day), local transport, activities, visa fees if applicable
-- Use REALISTIC 2024-2025 prices — do NOT underestimate. Cross-check: a budget trip from India to USA for 1 person for 15 days costs at MINIMUM ₹2,50,000-₹3,00,000 total.
-- Each plan should be meaningfully different in quality and cost
-- The cheapest plan should still be REALISTIC (not impossibly cheap)
-- Budget should roughly 3-4x from plan 1 to plan 10 for international trips
-- For domestic trips, budget should roughly 2-3x from plan 1 to plan 10
-- imageKeyword: 2-3 words describing the travel style for that tier`;
-
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${GROQ_API_KEY}`,
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "You are a travel budget AI. Return ONLY valid JSON, no markdown formatting." },
+          { role: "system", content: "Travel budget AI. Return ONLY valid JSON, no markdown." },
           { role: "user", content: prompt },
         ],
         temperature: 0.7,
+        max_tokens: 3000,
       }),
     });
 
     if (!response.ok) {
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited. Try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (response.status === 429) return new Response(JSON.stringify({ error: "Rate limited. Try again." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       if (response.status === 402) return new Response(JSON.stringify({ error: "AI credits exhausted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       return new Response(JSON.stringify({ error: "Failed to generate budget plans" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
