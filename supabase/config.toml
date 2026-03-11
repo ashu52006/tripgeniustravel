@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-budget-plans]
 verify_jwt = false
+
+[functions.suggest-cities]
+verify_jwt = false
