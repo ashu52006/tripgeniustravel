@@ -1,4 +1,4 @@
-export type TravelStyle = 'budget' | 'balanced' | 'luxury' | 'adventure' | 'cultural';
+export type TripType = 'solo' | 'couple' | 'family' | 'group' | 'business';
 export type TravelPace = 'relaxed' | 'normal' | 'fast';
 export type PlacePriority = 'must-visit' | 'recommended' | 'optional';
 export type CrowdLevel = 'low' | 'medium' | 'high';
