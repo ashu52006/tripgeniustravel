@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Crown, Download, Mail, Save, Share2, FolderOpen, Link2 } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -12,6 +12,7 @@ import BudgetIntelligence from '@/components/BudgetIntelligence';
 import TripDashboard from '@/components/TripDashboard';
 import SubscriptionPage from '@/components/SubscriptionPage';
 import SavedTripsPage from '@/components/SavedTripsPage';
+import TripPreferences from '@/components/TripPreferences';
 import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
@@ -20,10 +21,9 @@ import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getPlanConfig } from '@/lib/planLimits';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'loading' | 'plan' | 'subscribe' | 'saved-trips';
+type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'preferences' | 'loading' | 'plan' | 'subscribe' | 'saved-trips';
 type Tab = 'dashboard' | 'itinerary' | 'budget';
 
 const Index = () => {
@@ -34,7 +34,8 @@ const Index = () => {
   const [tripSetup, setTripSetup] = useState<TripSetup | null>(null);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [userPlan, setUserPlan] = useState<string>('basic');
+  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
+  const [customPlaces, setCustomPlaces] = useState<string[]>([]);
 
   const handleGetStarted = () => {
     if (user) {
@@ -60,7 +61,16 @@ const Index = () => {
     if (!tripSetup) return;
     const finalSetup = { ...tripSetup, userBudget: budget };
     setTripSetup(finalSetup);
+    setStep('preferences');
+  };
+
+  const generateTrip = async (places: string[] = [], custom: string[] = []) => {
+    if (!tripSetup) return;
+    setSelectedPlaces(places);
+    setCustomPlaces(custom);
     setStep('loading');
+
+    const finalSetup = tripSetup;
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-trip', {
@@ -78,13 +88,15 @@ const Index = () => {
           tripType: finalSetup.tripType,
           pace: finalSetup.pace,
           startDate: finalSetup.startDate,
+          selectedPlaces: places,
+          customPlaces: custom,
         },
       });
 
       if (error) throw error;
       if (data?.error) {
         toast.error(data.error);
-        setStep('budget');
+        setStep('preferences');
         return;
       }
 
@@ -118,19 +130,6 @@ const Index = () => {
       setPlan(fallback);
       setStep('plan');
     }
-  };
-
-  const planConfig = getPlanConfig(userPlan);
-
-  // Free users see only first half of days
-  const getFreeDays = () => {
-    if (!plan) return 0;
-    return Math.ceil(plan.days.length / 2);
-  };
-
-  const isLockedDay = (dayIndex: number) => {
-    if (planConfig.allDaysUnlocked) return false;
-    return dayIndex >= getFreeDays();
   };
 
   const handleExportPdf = () => {
@@ -174,35 +173,44 @@ const Index = () => {
     }
   };
 
+  const handleShareLink = async () => {
+    if (!plan || !user) {
+      toast.error('Please sign in to create a share link.');
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('shared_trips')
+        .insert({
+          created_by: user.id,
+          trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
+          origin: plan.setup.origin,
+          destination: plan.setup.destination,
+          trip_data: plan as any,
+        })
+        .select('share_id')
+        .single();
+
+      if (error) throw error;
+      const url = `${window.location.origin}/shared/${data.share_id}`;
+      await navigator.clipboard.writeText(url);
+      toast.success('Share link copied to clipboard! 🔗');
+    } catch (e: any) {
+      console.error('Share link error:', e);
+      toast.error('Failed to create share link.');
+    }
+  };
+
   const handleSaveTrip = async () => {
     if (!plan || !user) {
       toast.error('Please sign in to save trips.');
       return;
     }
-    if (planConfig.savedTripsLimit === 0) {
-      toast.error('Saving trips requires Silver plan or above. Upgrade to unlock!');
-      setStep('subscribe');
-      return;
-    }
 
     try {
-      // Check existing saved trips count
-      if (planConfig.savedTripsLimit > 0) {
-        const { count } = await supabase
-          .from('saved_trips')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-
-        if (count !== null && count >= planConfig.savedTripsLimit) {
-          toast.error(`You've reached your limit of ${planConfig.savedTripsLimit} saved trips. Upgrade for more!`);
-          setStep('subscribe');
-          return;
-        }
-      }
-
       const { error } = await supabase.from('saved_trips').insert({
         user_id: user.id,
-        plan_id: userPlan,
+        plan_id: 'basic',
         trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
         origin: plan.setup.origin,
         destination: plan.setup.destination,
@@ -231,12 +239,13 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe' || step === 'saved-trips') && (
+            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe' || step === 'saved-trips' || step === 'preferences') && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => {
                   if (step === 'plan') setStep('budget');
+                  else if (step === 'preferences') setStep('budget');
                   else if (step === 'budget') setStep('setup');
                   else if (step === 'setup') setStep('region');
                   else if (step === 'subscribe') setStep('plan');
@@ -279,18 +288,6 @@ const Index = () => {
               >
                 <Save className="w-4 h-4" />
                 Save
-                {planConfig.savedTripsLimit === 0 && <Crown className="w-3 h-3 text-warning" />}
-              </Button>
-            )}
-            {step === 'plan' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep('subscribe')}
-                className="text-warning gap-1"
-              >
-                <Crown className="w-4 h-4" />
-                {userPlan === 'basic' ? 'Upgrade' : userPlan}
               </Button>
             )}
             <LanguageSelector />
@@ -350,6 +347,16 @@ const Index = () => {
             />
           )}
 
+          {step === 'preferences' && tripSetup && (
+            <TripPreferences
+              key="preferences"
+              destination={tripSetup.destination}
+              onSubmit={(places, custom) => generateTrip(places, custom)}
+              onSkip={() => generateTrip()}
+              onBack={() => setStep('budget')}
+            />
+          )}
+
           {step === 'loading' && tripSetup && (
             <LoadingScreen key="loading" origin={tripSetup.origin} destination={tripSetup.destination} />
           )}
@@ -358,8 +365,8 @@ const Index = () => {
             <SubscriptionPage
               key="subscribe"
               onBack={() => setStep('plan')}
-              currentPlan={userPlan}
-              onSubscribe={(p) => { setUserPlan(p); setStep('plan'); }}
+              currentPlan="basic"
+              onSubscribe={() => setStep('plan')}
             />
           )}
 
@@ -390,6 +397,9 @@ const Index = () => {
                     <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5 rounded-xl">
                       <Share2 className="w-4 h-4" /> Share
                     </Button>
+                    <Button variant="outline" size="sm" onClick={handleShareLink} className="gap-1.5 rounded-xl">
+                      <Link2 className="w-4 h-4" /> Copy Link
+                    </Button>
                   </div>
                   {plan.days.map((day, i) => (
                     <DayItinerary
@@ -397,8 +407,6 @@ const Index = () => {
                       dayPlan={day}
                       currency={plan.budget.currency}
                       homeCurrency={plan.setup.homeCurrency}
-                      isLocked={isLockedDay(i)}
-                      onSubscribe={() => setStep('subscribe')}
                     />
                   ))}
                 </div>

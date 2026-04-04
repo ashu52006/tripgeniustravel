@@ -67,6 +67,7 @@ export interface PlaceRecommendation {
   weatherSuitability: string;
   priority: PlacePriority;
   category: 'attraction' | 'food' | 'transport' | 'rest' | 'activity' | 'viewpoint' | 'flight' | 'hotel';
+  transportMode?: 'walk' | 'taxi' | 'metro' | 'bus' | 'train' | 'flight' | 'auto' | 'ferry' | 'bike';
   imageUrl?: string;
   mapUrl?: string;
 }

@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_trips: {
+        Row: {
+          created_at: string
+          created_by: string
+          destination: string
+          id: string
+          origin: string
+          share_id: string
+          trip_data: Json
+          trip_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          destination: string
+          id?: string
+          origin: string
+          share_id?: string
+          trip_data: Json
+          trip_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          destination?: string
+          id?: string
+          origin?: string
+          share_id?: string
+          trip_data?: Json
+          trip_name?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

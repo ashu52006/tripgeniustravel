@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock } from 'lucide-react';
+import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock, Train, Bus, Footprints, Bike, Ship, Plane } from 'lucide-react';
 import { DayPlan, PlacePriority } from '@/types/trip';
 
 const priorityConfig: Record<PlacePriority, { icon: React.ReactNode; label: string; className: string }> = {
@@ -12,6 +12,18 @@ const priorityConfig: Record<PlacePriority, { icon: React.ReactNode; label: stri
 const categoryEmoji: Record<string, string> = {
   attraction: '🏛️', food: '🍽️', transport: '🚗', rest: '😌',
   activity: '🎯', viewpoint: '🌅', flight: '✈️', hotel: '🏨',
+};
+
+const transportModeConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  walk: { icon: <Footprints className="w-3.5 h-3.5" />, label: 'Walk', color: 'text-green-500' },
+  taxi: { icon: <Car className="w-3.5 h-3.5" />, label: 'Taxi', color: 'text-yellow-500' },
+  auto: { icon: <Car className="w-3.5 h-3.5" />, label: 'Auto', color: 'text-orange-500' },
+  metro: { icon: <Train className="w-3.5 h-3.5" />, label: 'Metro', color: 'text-blue-500' },
+  bus: { icon: <Bus className="w-3.5 h-3.5" />, label: 'Bus', color: 'text-teal-500' },
+  train: { icon: <Train className="w-3.5 h-3.5" />, label: 'Train', color: 'text-indigo-500' },
+  flight: { icon: <Plane className="w-3.5 h-3.5" />, label: 'Flight', color: 'text-purple-500' },
+  ferry: { icon: <Ship className="w-3.5 h-3.5" />, label: 'Ferry', color: 'text-cyan-500' },
+  bike: { icon: <Bike className="w-3.5 h-3.5" />, label: 'Bike', color: 'text-lime-500' },
 };
 
 const fallbackPlaceImage = (placeName: string, seed: string) =>
@@ -188,6 +200,14 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                         {categoryEmoji[place.category] || '📍'}
                       </div>
 
+                      {/* Transport mode connector */}
+                      {i > 0 && place.transportMode && transportModeConfig[place.transportMode] && (
+                        <div className={`absolute left-[6px] -top-3 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border text-[10px] font-medium ${transportModeConfig[place.transportMode].color}`}>
+                          {transportModeConfig[place.transportMode].icon}
+                          <span>{transportModeConfig[place.transportMode].label}</span>
+                        </div>
+                      )}
+
                       <div className="glass rounded-xl p-4 hover:shadow-card transition-shadow">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -198,6 +218,11 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${priority.className}`}>
                                 {priority.icon} {priority.label}
                               </span>
+                              {place.transportMode && transportModeConfig[place.transportMode] && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border border-border bg-card ${transportModeConfig[place.transportMode].color}`}>
+                                  {transportModeConfig[place.transportMode].icon} {transportModeConfig[place.transportMode].label}
+                                </span>
+                              )}
                             </div>
                             <h4 className="font-semibold text-foreground mt-1">{place.name}</h4>
                             <p className="text-sm text-muted-foreground mt-0.5">{place.whyRecommended}</p>
