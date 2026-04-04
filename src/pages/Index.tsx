@@ -397,6 +397,9 @@ const Index = () => {
                     <Button variant="outline" size="sm" onClick={handleShare} className="gap-1.5 rounded-xl">
                       <Share2 className="w-4 h-4" /> Share
                     </Button>
+                    <Button variant="outline" size="sm" onClick={handleShareLink} className="gap-1.5 rounded-xl">
+                      <Link2 className="w-4 h-4" /> Copy Link
+                    </Button>
                   </div>
                   {plan.days.map((day, i) => (
                     <DayItinerary
