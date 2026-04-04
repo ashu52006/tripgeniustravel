@@ -200,6 +200,14 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                         {categoryEmoji[place.category] || '📍'}
                       </div>
 
+                      {/* Transport mode connector */}
+                      {i > 0 && place.transportMode && transportModeConfig[place.transportMode] && (
+                        <div className={`absolute left-[6px] -top-3 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border text-[10px] font-medium ${transportModeConfig[place.transportMode].color}`}>
+                          {transportModeConfig[place.transportMode].icon}
+                          <span>{transportModeConfig[place.transportMode].label}</span>
+                        </div>
+                      )}
+
                       <div className="glass rounded-xl p-4 hover:shadow-card transition-shadow">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -210,6 +218,11 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${priority.className}`}>
                                 {priority.icon} {priority.label}
                               </span>
+                              {place.transportMode && transportModeConfig[place.transportMode] && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border border-border bg-card ${transportModeConfig[place.transportMode].color}`}>
+                                  {transportModeConfig[place.transportMode].icon} {transportModeConfig[place.transportMode].label}
+                                </span>
+                              )}
                             </div>
                             <h4 className="font-semibold text-foreground mt-1">{place.name}</h4>
                             <p className="text-sm text-muted-foreground mt-0.5">{place.whyRecommended}</p>
