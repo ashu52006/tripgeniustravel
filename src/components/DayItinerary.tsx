@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock, Train, Bus, Footprints, Bike, Ship, Plane } from 'lucide-react';
-import { DayPlan, PlacePriority, PlaceRecommendation } from '@/types/trip';
+import { DayPlan, PlacePriority } from '@/types/trip';
 
 const priorityConfig: Record<PlacePriority, { icon: React.ReactNode; label: string; className: string }> = {
   'must-visit': { icon: <Flame className="w-3.5 h-3.5" />, label: 'Must Visit', className: 'bg-primary/15 text-primary border-primary/30' },
