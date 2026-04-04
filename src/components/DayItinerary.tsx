@@ -14,6 +14,18 @@ const categoryEmoji: Record<string, string> = {
   activity: '🎯', viewpoint: '🌅', flight: '✈️', hotel: '🏨',
 };
 
+const transportModeConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  walk: { icon: <Footprints className="w-3.5 h-3.5" />, label: 'Walk', color: 'text-green-500' },
+  taxi: { icon: <Car className="w-3.5 h-3.5" />, label: 'Taxi', color: 'text-yellow-500' },
+  auto: { icon: <Car className="w-3.5 h-3.5" />, label: 'Auto', color: 'text-orange-500' },
+  metro: { icon: <Train className="w-3.5 h-3.5" />, label: 'Metro', color: 'text-blue-500' },
+  bus: { icon: <Bus className="w-3.5 h-3.5" />, label: 'Bus', color: 'text-teal-500' },
+  train: { icon: <Train className="w-3.5 h-3.5" />, label: 'Train', color: 'text-indigo-500' },
+  flight: { icon: <Plane className="w-3.5 h-3.5" />, label: 'Flight', color: 'text-purple-500' },
+  ferry: { icon: <Ship className="w-3.5 h-3.5" />, label: 'Ferry', color: 'text-cyan-500' },
+  bike: { icon: <Bike className="w-3.5 h-3.5" />, label: 'Bike', color: 'text-lime-500' },
+};
+
 const fallbackPlaceImage = (placeName: string, seed: string) =>
   `https://loremflickr.com/200/200/${placeName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ',') || 'travel,landmark'}?lock=${encodeURIComponent(seed)}`;
 
