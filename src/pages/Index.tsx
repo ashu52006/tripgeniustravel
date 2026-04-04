@@ -173,6 +173,34 @@ const Index = () => {
     }
   };
 
+  const handleShareLink = async () => {
+    if (!plan || !user) {
+      toast.error('Please sign in to create a share link.');
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('shared_trips')
+        .insert({
+          created_by: user.id,
+          trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
+          origin: plan.setup.origin,
+          destination: plan.setup.destination,
+          trip_data: plan as any,
+        })
+        .select('share_id')
+        .single();
+
+      if (error) throw error;
+      const url = `${window.location.origin}/shared/${data.share_id}`;
+      await navigator.clipboard.writeText(url);
+      toast.success('Share link copied to clipboard! 🔗');
+    } catch (e: any) {
+      console.error('Share link error:', e);
+      toast.error('Failed to create share link.');
+    }
+  };
+
   const handleSaveTrip = async () => {
     if (!plan || !user) {
       toast.error('Please sign in to save trips.');
