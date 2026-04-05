@@ -109,37 +109,6 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency }: DayIti
     };
   }, [dayPlan.day, dayPlan.title, dayPlan.places]);
 
-  if (isLocked) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl overflow-hidden relative"
-      >
-        <div className="p-5 filter blur-sm pointer-events-none">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-hero flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
-              {dayPlan.day}
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground">Day {dayPlan.day}: {dayPlan.title}</h3>
-              <p className="text-sm text-muted-foreground">Locked content</p>
-            </div>
-          </div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <button
-            onClick={onSubscribe}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-hero text-primary-foreground font-bold rounded-2xl shadow-glow hover:shadow-elevated transition-all"
-          >
-            <Lock className="w-5 h-5" />
-            Subscribe for Full Plan
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
