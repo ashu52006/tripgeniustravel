@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
-import { Calendar, Wallet, TrendingUp, MapPin, Plane, Navigation } from 'lucide-react';
+import { Calendar, Wallet, TrendingUp, MapPin, Plane, Navigation, CalendarDays, ArrowRight } from 'lucide-react';
 import { TripPlan } from '@/types/trip';
 import BackgroundCarousel from './BackgroundCarousel';
+import { Button } from '@/components/ui/button';
 
 interface TripDashboardProps {
   plan: TripPlan;
+  onViewItinerary?: () => void;
 }
 
 export default function TripDashboard({ plan }: TripDashboardProps) {
