@@ -59,12 +59,10 @@ interface DayItineraryProps {
   dayPlan: DayPlan;
   currency: string;
   homeCurrency?: string;
-  isLocked?: boolean;
-  onSubscribe?: () => void;
 }
 
-export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked, onSubscribe }: DayItineraryProps) {
-  const [expanded, setExpanded] = useState(!isLocked);
+export default function DayItinerary({ dayPlan, currency, homeCurrency }: DayItineraryProps) {
+  const [expanded, setExpanded] = useState(true);
   const [placeImages, setPlaceImages] = useState<Record<string, string>>({});
   const showDual = homeCurrency && homeCurrency !== currency;
 
