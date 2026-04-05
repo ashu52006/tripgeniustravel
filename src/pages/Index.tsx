@@ -100,9 +100,16 @@ const Index = () => {
         return;
       }
 
+      const aiDays = data.days || [];
+      
+      // Warn if AI returned fewer days than requested
+      if (aiDays.length < finalSetup.days) {
+        toast.warning(`AI generated ${aiDays.length} of ${finalSetup.days} days. Some days may be missing.`);
+      }
+
       const tripPlan: TripPlan = {
         setup: finalSetup,
-        days: data.days || [],
+        days: aiDays,
         budget: {
           ...(data.budget || {
             userBudget: finalSetup.userBudget,
