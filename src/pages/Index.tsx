@@ -279,6 +279,17 @@ const Index = () => {
                 My Trips
               </Button>
             )}
+            {user && (step === 'plan' || step === 'region' || step === 'setup') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('subscribe')}
+                className="gap-1 text-warning"
+              >
+                <Crown className="w-4 h-4" />
+                Upgrade
+              </Button>
+            )}
             {step === 'plan' && (
               <Button
                 variant="ghost"
