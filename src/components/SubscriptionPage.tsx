@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Crown, Rocket, Star, Zap, Building2, Phone, Mail, ArrowLeft } from 'lucide-react';
+import { Check, Crown, Rocket, Star, Zap, Building2, Phone, Mail, ArrowLeft, TrendingUp, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import BackgroundCarousel from './BackgroundCarousel';
 import { toast } from 'sonner';
@@ -17,15 +17,18 @@ const plans = [
     id: 'basic',
     name: 'Basic',
     price: 0,
-    priceLabel: 'Free',
+    priceLabel: 'Free Forever',
+    priceSubtext: 'No credit card needed',
     icon: <Star className="w-8 h-8" />,
     color: 'border-muted-foreground/30',
+    tag: null,
     features: [
-      'AI trip planning (half itinerary)',
-      'Up to 15 days visible per trip',
-      'Basic budget analysis',
-      'Dual currency display',
-      'Single trip at a time',
+      'Full AI trip planning — all days visible',
+      'Up to 15-day trips',
+      'Budget analysis & dual currency',
+      'Export PDF, Email & Share',
+      'Unlimited saved trips',
+      'Place checkpoints & transport modes',
     ],
     cta: 'Current Plan',
     popular: false,
@@ -34,77 +37,61 @@ const plans = [
     id: 'silver',
     name: 'Silver',
     price: 199,
-    priceLabel: '₹199/mo',
+    priceLabel: '₹199',
+    priceSubtext: 'per month',
     icon: <Zap className="w-8 h-8" />,
     color: 'border-accent/50',
+    tag: null,
     features: [
-      'Full itinerary (all days unlocked)',
+      'Everything in Basic',
       'Up to 30-day trips',
       'Detailed budget pie charts',
-      'Flight & hotel comparisons',
-      'Place images & map links',
-      'Save 3 trips',
+      'Flight & hotel price comparisons',
+      'Priority AI generation (2× faster)',
+      'Ad-free experience',
     ],
-    cta: 'Subscribe Now',
+    cta: 'Upgrade to Silver',
     popular: false,
   },
   {
     id: 'gold',
     name: 'Gold',
     price: 599,
-    priceLabel: '₹599/mo',
+    priceLabel: '₹599',
+    priceSubtext: 'per month',
     icon: <Crown className="w-8 h-8" />,
     color: 'border-warning/60',
+    tag: { label: '⭐ Best Value', className: 'bg-warning text-warning-foreground' },
     features: [
       'Everything in Silver',
       'Up to 60-day trips',
-      'Priority AI generation (faster)',
-      'Taxi fare estimates between places',
-      'Unlimited saved trips',
-      'Export itinerary as PDF',
-      'Email trip to companions',
+      'Real-time taxi fare estimates',
+      'Multi-city trip planning',
+      'Personalized AI recommendations',
+      'Priority customer support',
     ],
-    cta: 'Subscribe Now',
+    cta: 'Upgrade to Gold',
     popular: true,
   },
   {
     id: 'platinum',
     name: 'Platinum',
     price: 999,
-    priceLabel: '₹999/mo',
+    priceLabel: '₹999',
+    priceSubtext: 'per month',
     icon: <Rocket className="w-8 h-8" />,
     color: 'border-primary/70',
+    tag: { label: '🚀 Power Users', className: 'bg-primary text-primary-foreground' },
     features: [
       'Everything in Gold',
       'Up to 90-day trips',
-      'Real-time price updates',
-      'Personalized recommendations',
-      'Priority customer support',
-      'Multi-city trip planning',
-      'Group trip coordination',
-      'Ad-free experience',
-    ],
-    cta: 'Subscribe Now',
-    popular: false,
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: -1,
-    priceLabel: 'Contact Us',
-    icon: <Building2 className="w-8 h-8" />,
-    color: 'border-success/60',
-    features: [
-      'Lifetime access — no subscription needed',
-      'Designed for tourism companies',
-      'Unlimited trips & travelers',
-      'White-label options available',
+      'Real-time price tracking & alerts',
+      'Group trip coordination tools',
+      'Advanced analytics dashboard',
+      'White-label trip sharing',
       'Dedicated account manager',
-      'Custom API integration',
-      'Bulk trip generation',
-      'Analytics dashboard',
     ],
-    cta: 'Contact Sales',
+    cta: 'Upgrade to Platinum',
     popular: false,
   },
 ];
@@ -126,10 +113,6 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
 
   const handleSubscribe = async (planId: string) => {
     if (planId === 'basic') return;
-    if (planId === 'enterprise') {
-      window.open('mailto:tripgenius@travel.com', '_blank');
-      return;
-    }
 
     const plan = plans.find(p => p.id === planId);
     if (!plan || plan.price <= 0) return;
@@ -137,7 +120,6 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
     setLoading(planId);
 
     try {
-      // Load Razorpay script
       const loaded = await loadRazorpayScript();
       if (!loaded) {
         toast.error('Failed to load payment system. Please try again.');
@@ -145,7 +127,6 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
         return;
       }
 
-      // Create order via edge function
       const { data, error } = await supabase.functions.invoke('create-razorpay-order', {
         body: { planId: plan.id, planName: plan.name, amount: plan.price },
       });
@@ -156,23 +137,20 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
         return;
       }
 
-      // Open Razorpay Checkout
       const options = {
         key: data.keyId,
         amount: plan.price * 100,
         currency: 'INR',
         name: 'TripGenius',
-        description: `${plan.name} Plan - ₹${plan.price}/mo`,
+        description: `${plan.name} Plan — ₹${plan.price}/mo`,
         order_id: data.orderId,
         handler: function () {
-          toast.success(`Successfully subscribed to ${plan.name} plan! 🎉`);
+          toast.success(`Successfully upgraded to ${plan.name}! 🎉`);
           onSubscribe?.(planId);
         },
         prefill: {},
         theme: { color: '#0ea5e9' },
-        modal: {
-          ondismiss: () => setLoading(null),
-        },
+        modal: { ondismiss: () => setLoading(null) },
       };
 
       const rzp = new (window as any).Razorpay(options);
@@ -190,60 +168,66 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen px-4 py-12"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen px-4 py-12">
       <BackgroundCarousel />
 
       <div className="relative z-10 max-w-6xl mx-auto pt-16">
+        {/* Header */}
         <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-10">
-          <Crown className="w-14 h-14 text-warning mx-auto mb-3" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+            <Shield className="w-4 h-4" />
+            All core features are free — upgrade for extended capabilities
+          </div>
           <h1 className="text-3xl md:text-5xl font-display font-bold text-gradient-hero mb-3">
-            Choose Your Plan
+            Simple, Transparent Pricing
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Unlock the full power of AI-powered trip planning
+            No hidden fees. No locked itineraries. Choose the plan that fits your travel style.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
-          {plans.slice(0, 4).map((plan, i) => (
+        {/* Plan comparison */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {plans.map((plan, i) => (
             <motion.div
               key={plan.id}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className={`glass rounded-2xl p-6 border-2 relative transition-all duration-300 hover:shadow-glow ${
+              className={`glass rounded-2xl p-6 border-2 relative transition-all duration-300 hover:shadow-glow flex flex-col ${
                 plan.popular ? 'border-warning shadow-glow lg:scale-105' : plan.color
               } ${currentPlan === plan.id ? 'ring-2 ring-primary' : ''}`}
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-warning text-warning-foreground text-xs font-bold rounded-full">
-                  MOST POPULAR
+              {plan.tag && (
+                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 text-xs font-bold rounded-full whitespace-nowrap ${plan.tag.className}`}>
+                  {plan.tag.label}
                 </div>
               )}
+
               <div className="text-center mb-4">
                 <div className="text-primary mb-2">{plan.icon}</div>
                 <h3 className="text-xl font-display font-bold text-foreground">{plan.name}</h3>
                 <p className="text-3xl font-display font-bold text-foreground mt-2">{plan.priceLabel}</p>
+                <p className="text-xs text-muted-foreground">{plan.priceSubtext}</p>
               </div>
-              <ul className="space-y-2 mb-6">
+
+              <ul className="space-y-2 mb-6 flex-1">
                 {plan.features.map((f, j) => (
                   <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     {f}
                   </li>
                 ))}
               </ul>
+
               <Button
                 onClick={() => handleSubscribe(plan.id)}
                 disabled={currentPlan === plan.id || loading === plan.id}
                 className={`w-full rounded-xl ${
                   plan.popular
                     ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+                    : currentPlan === plan.id
+                    ? 'bg-muted text-muted-foreground'
                     : 'bg-gradient-hero border-0 text-primary-foreground'
                 }`}
               >
@@ -253,26 +237,35 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
           ))}
         </div>
 
-        {/* Enterprise Plan */}
+        {/* Enterprise */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="glass rounded-2xl p-8 border-2 border-success/50 mb-8"
+          className="glass rounded-2xl p-8 border-2 border-muted-foreground/30 mb-8"
         >
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <Building2 className="w-10 h-10 text-success" />
+                <Building2 className="w-10 h-10 text-primary" />
                 <div>
                   <h3 className="text-2xl font-display font-bold text-foreground">Enterprise</h3>
                   <p className="text-sm text-muted-foreground">For Tourism Companies — Lifetime Access</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 mb-4">
-                {plans[4].features.map((f, i) => (
+                {[
+                  'Lifetime access — no subscription',
+                  'Unlimited trips & travelers',
+                  'White-label options',
+                  'Dedicated account manager',
+                  'Custom API integration',
+                  'Bulk trip generation',
+                  'Analytics dashboard',
+                  'Priority support',
+                ].map((f, i) => (
                   <span key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Check className="w-4 h-4 text-success shrink-0" />
+                    <Check className="w-4 h-4 text-primary shrink-0" />
                     {f}
                   </span>
                 ))}
@@ -287,9 +280,9 @@ export default function SubscriptionPage({ onBack, currentPlan = 'basic', onSubs
               </div>
             </div>
             <Button
-              onClick={() => handleSubscribe('enterprise')}
+              onClick={() => window.open('mailto:tripgenius@travel.com', '_blank')}
               size="lg"
-              className="bg-success text-success-foreground rounded-xl px-8 hover:bg-success/90"
+              className="bg-gradient-hero border-0 text-primary-foreground rounded-xl px-8"
             >
               Contact Sales
             </Button>

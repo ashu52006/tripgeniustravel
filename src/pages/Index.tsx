@@ -384,7 +384,7 @@ const Index = () => {
 
           {step === 'plan' && plan && (
             <div key="plan">
-              {activeTab === 'dashboard' && <TripDashboard plan={plan} />}
+              {activeTab === 'dashboard' && <TripDashboard plan={plan} onViewItinerary={() => setActiveTab('itinerary')} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
                   <div className="flex gap-2 justify-end">

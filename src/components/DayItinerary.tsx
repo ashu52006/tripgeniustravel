@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Lock, Train, Bus, Footprints, Bike, Ship, Plane } from 'lucide-react';
+import { Clock, MapPin, Users, Flame, Star, Plus, ChevronDown, ChevronUp, CloudSun, Navigation, Car, ExternalLink, Train, Bus, Footprints, Bike, Ship, Plane } from 'lucide-react';
 import { DayPlan, PlacePriority } from '@/types/trip';
 
 const priorityConfig: Record<PlacePriority, { icon: React.ReactNode; label: string; className: string }> = {
@@ -59,12 +59,10 @@ interface DayItineraryProps {
   dayPlan: DayPlan;
   currency: string;
   homeCurrency?: string;
-  isLocked?: boolean;
-  onSubscribe?: () => void;
 }
 
-export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked, onSubscribe }: DayItineraryProps) {
-  const [expanded, setExpanded] = useState(!isLocked);
+export default function DayItinerary({ dayPlan, currency, homeCurrency }: DayItineraryProps) {
+  const [expanded, setExpanded] = useState(true);
   const [placeImages, setPlaceImages] = useState<Record<string, string>>({});
   const showDual = homeCurrency && homeCurrency !== currency;
 
@@ -110,37 +108,6 @@ export default function DayItinerary({ dayPlan, currency, homeCurrency, isLocked
       cancelled = true;
     };
   }, [dayPlan.day, dayPlan.title, dayPlan.places]);
-
-  if (isLocked) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-2xl overflow-hidden relative"
-      >
-        <div className="p-5 filter blur-sm pointer-events-none">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-hero flex items-center justify-center text-primary-foreground font-display font-bold text-lg">
-              {dayPlan.day}
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-foreground">Day {dayPlan.day}: {dayPlan.title}</h3>
-              <p className="text-sm text-muted-foreground">Locked content</p>
-            </div>
-          </div>
-        </div>
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <button
-            onClick={onSubscribe}
-            className="flex items-center gap-2 px-6 py-3 bg-gradient-hero text-primary-foreground font-bold rounded-2xl shadow-glow hover:shadow-elevated transition-all"
-          >
-            <Lock className="w-5 h-5" />
-            Subscribe for Full Plan
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
 
   return (
     <motion.div

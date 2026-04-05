@@ -1,13 +1,15 @@
 import { motion } from 'framer-motion';
-import { Calendar, Wallet, TrendingUp, MapPin, Plane, Navigation } from 'lucide-react';
+import { Calendar, Wallet, TrendingUp, MapPin, Plane, Navigation, CalendarDays, ArrowRight } from 'lucide-react';
 import { TripPlan } from '@/types/trip';
 import BackgroundCarousel from './BackgroundCarousel';
+import { Button } from '@/components/ui/button';
 
 interface TripDashboardProps {
   plan: TripPlan;
+  onViewItinerary?: () => void;
 }
 
-export default function TripDashboard({ plan }: TripDashboardProps) {
+export default function TripDashboard({ plan, onViewItinerary }: TripDashboardProps) {
   const totalDayCost = plan.days.reduce((s, d) => s + d.cost.total, 0);
   const avgDaily = Math.round(totalDayCost / plan.days.length);
   const startDate = new Date(plan.setup.startDate);
@@ -59,6 +61,32 @@ export default function TripDashboard({ plan }: TripDashboardProps) {
             </motion.div>
           ))}
         </div>
+
+        {/* Prominent Itinerary CTA */}
+        {onViewItinerary && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass rounded-2xl p-6 text-center border-2 border-primary/30 bg-primary/5"
+          >
+            <h3 className="font-display font-bold text-lg text-foreground mb-1">
+              Your {plan.days.length}-Day Itinerary is Ready!
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {plan.days.reduce((s, d) => s + d.places.length, 0)} places across {plan.days.length} days — all days fully visible, no restrictions.
+            </p>
+            <Button
+              onClick={onViewItinerary}
+              size="lg"
+              className="bg-gradient-hero border-0 text-primary-foreground font-bold gap-2 rounded-xl shadow-glow hover:shadow-elevated transition-all"
+            >
+              <CalendarDays className="w-5 h-5" />
+              View Full Itinerary
+              <ArrowRight className="w-5 h-5" />
+            </Button>
+          </motion.div>
+        )}
 
         {/* Flights */}
         {plan.flights.length > 0 && (
