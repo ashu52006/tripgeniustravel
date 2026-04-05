@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2 } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -100,9 +100,16 @@ const Index = () => {
         return;
       }
 
+      const aiDays = data.days || [];
+      
+      // Warn if AI returned fewer days than requested
+      if (aiDays.length < finalSetup.days) {
+        toast.warning(`AI generated ${aiDays.length} of ${finalSetup.days} days. Some days may be missing.`);
+      }
+
       const tripPlan: TripPlan = {
         setup: finalSetup,
-        days: data.days || [],
+        days: aiDays,
         budget: {
           ...(data.budget || {
             userBudget: finalSetup.userBudget,
@@ -277,6 +284,17 @@ const Index = () => {
               >
                 <FolderOpen className="w-4 h-4" />
                 My Trips
+              </Button>
+            )}
+            {user && (step === 'plan' || step === 'region' || step === 'setup') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep('subscribe')}
+                className="gap-1 text-warning"
+              >
+                <Crown className="w-4 h-4" />
+                Upgrade
               </Button>
             )}
             {step === 'plan' && (
