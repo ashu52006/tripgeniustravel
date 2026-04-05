@@ -9,7 +9,7 @@ interface TripDashboardProps {
   onViewItinerary?: () => void;
 }
 
-export default function TripDashboard({ plan }: TripDashboardProps) {
+export default function TripDashboard({ plan, onViewItinerary }: TripDashboardProps) {
   const totalDayCost = plan.days.reduce((s, d) => s + d.cost.total, 0);
   const avgDaily = Math.round(totalDayCost / plan.days.length);
   const startDate = new Date(plan.setup.startDate);
