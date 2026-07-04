@@ -1,55 +1,75 @@
+# Trip Genius — Alignment to Wireframe v2 Spec
 
+The app already covers Landing, Auth, Region, Setup, Budget, Itinerary, Saved Trips, Subscription, and Share. This plan closes the gaps between what exists and the Master Prompt spec, without rebuilding what already works.
 
-# Remaining Implementation Plan
+## Scope: What's Missing vs. Spec
 
-Based on the conversation history and current codebase, here are the features discussed but not yet implemented:
+1. **Centralized entitlement service** — currently `planLimits.ts` has all features enabled for everyone. Spec requires a single `canAccess(user, feature)` used at every gate point.
+2. **Shared `<LockedOverlay />` component** — no reusable blur+lock+CTA pattern exists.
+3. **Post-login onboarding flow (P1–P4)** — notification permission, re-verification/OTP, buddy visibility toggle, preferences form — none exist.
+4. **Day-level editing with de-duplication (I8)** — no edit screen; no `tripService.editDay()` with cross-day de-dup.
+5. **One-time free PDF export** — export is currently unlimited/ungated; spec says free users get 1 per trip, persisted on the Trip.
+6. **Live Map gated screen (I6/I6b)** — map exists inline on itinerary; spec wants a dedicated screen with blurred preview for free users.
+7. **Trust cues on budget tiers (I1)** — source caption + confidence flag from service, driven by data.
+8. **Booking URL redirect model** — flights/hotels should expose `bookingUrl` and open in new tab (currently display-only).
+9. **Buddy visibility toggle** on user profile (default off; premium-gated when turned on).
 
-## 1. Remove Plan Limits for Free Features
-**Problem**: `planLimits.ts` still restricts PDF export, email, and saved trips for basic users. The user previously asked to remove subscription gates from export/email/share.
-- Update `planLimits.ts`: set `canExportPdf: true`, `canEmailTrip: true`, `savedTripsLimit: -1`, `allDaysUnlocked: true` for ALL plans
-- Remove the locked day logic from `Index.tsx` (the `isLockedDay` / `getFreeDays` functions)
-- Remove the Crown icon and subscription prompts from the Save button
+## Files to Add
 
-## 2. Subscription Page Access Only After Login
-**Problem**: User said subscription page should only open after login.
-- In `Index.tsx`, wrap the subscription navigation to check `user` first; if not logged in, redirect to auth step before showing subscribe
+- `src/lib/entitlements.ts` — `canAccess(user, feature)` + feature enum; single source of truth.
+- `src/components/LockedOverlay.tsx` — blur + gold lock + "Unlock with Premium" CTA (inline + fullscreen variants).
+- `src/components/onboarding/OnboardingFlow.tsx` — 4-step wizard (P1 notification, P2 re-verify OTP, P3 buddy visibility, P4 preferences). Persists `hasCompletedOnboarding` in `profiles` table.
+- `src/hooks/useCountdown.ts` — reusable OTP countdown.
+- `src/components/DayEditor.tsx` — I8 screen: edit day budget, replace/remove/add activity.
+- `src/lib/tripEditing.ts` — pure `editDay(trip, dayNumber, change)` with cross-day de-dup returning `{ trip, swap? }`.
+- `src/components/LiveMapScreen.tsx` — I6/I6b combined; blurred preview for free tier.
+- Migration: extend `profiles` (or create) with `has_completed_onboarding`, `show_name_to_companions`, `notification_choice`, `plan` columns. Add `pdf_exported_once` (bool) on `saved_trips`.
 
-## 3. Place/Checkpoint Selector (Pre-Generation)
-**Problem**: User requested ability to choose specific places/landmarks before generating the itinerary.
-- Add a new step `'preferences'` between `'budget'` and `'loading'` in `Index.tsx`
-- Create `TripPreferences.tsx` component with:
-  - AI-powered place suggestions for the destination (via a new edge function or reusing suggest-cities)
-  - Checkboxes/chips to select must-visit places
-  - Free-text input for custom places
-  - Pass selected places to the `generate-trip` edge function prompt
+## Files to Modify
 
-## 4. Transportation Mode Suggestions in Itinerary
-**Problem**: User wanted transport recommendations (road, flight, train) based on distance.
-- Update the `generate-trip` edge function prompt to include a `transportMode` field per place (e.g., "walk", "taxi", "metro", "bus", "train", "flight")
-- Update `PlaceRecommendation` type in `trip.ts` to add `transportMode` field
-- Update `DayItinerary.tsx` to display transport mode icons/badges between places
+- `src/lib/planLimits.ts` — keep as plan metadata; delegate feature checks to `entitlements.ts`.
+- `src/pages/Index.tsx` — after auth success, route through onboarding if not completed; add DayEditor + LiveMapScreen steps; wire export PDF to check + set `pdfExportedOnce`.
+- `src/components/DayItinerary.tsx` — wrap Day 2+ places in `<LockedOverlay feature="fullItinerary" />` for free users (currently all-unlocked). Add edit-pencil for premium.
+- `src/components/SubscriptionPage.tsx` — unify locked CTA to point through entitlement upgrade path.
+- `supabase/functions/generate-trip/index.ts` — return `bookingUrl`, `sourceCaption`, `confidence` on relevant items.
+- `src/types/trip.ts` — add `bookingUrl` to Flight/Hotel; add `pdfExportedOnce`, `confidence`, `sourceCaption` where appropriate.
 
-## 5. Shareable Trip Links
-**Problem**: Discussed in roadmap — generate public URLs for trip plans.
-- Create a `shared_trips` table (public, no auth required for reading)
-- Add an edge function or direct insert to create a share record with a UUID
-- Create a `/shared/:id` route that loads and displays a read-only trip view
-- Add a "Copy Link" button in the itinerary toolbar
+## Gating Rules (enforced via `canAccess`)
+
+| Feature key | Free | Premium (silver+) |
+|---|---|---|
+| `fullItinerary` | Day 1 only | All days |
+| `liveMap` | Blurred preview | Full |
+| `dayEditing` | Locked | Full |
+| `buddyVisibility` | Toggle locked | Toggle enabled |
+| `unlimitedPdf` | 1 per trip | Unlimited |
+| `saveTrip` | Locked | Unlimited |
+| `shareTrip` | Locked | Unlimited |
+
+Note: This reintroduces gating that was previously removed per user request. Prior instruction ("remove subscription for export pdf email trip and whatsapp share") conflicts with the new spec — new spec wins per this message.
 
 ## Implementation Order
-1. Remove plan limits (quick fix, ~5 min)
-2. Subscription page auth gate (quick fix, ~5 min)  
-3. Transportation mode in itinerary (prompt update + UI, ~20 min)
-4. Place/checkpoint selector (new component + edge function, ~30 min)
-5. Shareable trip links (new table + route + edge function, ~40 min)
 
-## Files to Create/Modify
-- `src/lib/planLimits.ts` — unlock all features
-- `src/pages/Index.tsx` — remove locked day logic, add auth gate for subscribe, add preferences step
-- `src/components/TripPreferences.tsx` — new place selector component
-- `src/components/DayItinerary.tsx` — add transport mode display
-- `src/types/trip.ts` — add `transportMode` to `PlaceRecommendation`
-- `supabase/functions/generate-trip/index.ts` — add transport mode + checkpoint support to prompt
-- New migration for `shared_trips` table
-- New route component for shared trip viewing
+1. Types + entitlements + LockedOverlay (foundation)
+2. Migration for profiles/onboarding + pdf flag
+3. OnboardingFlow + route guard in Index
+4. DayItinerary locking for free users
+5. LiveMapScreen with blur variant
+6. DayEditor + tripEditing de-dup logic
+7. Export PDF one-time logic + booking URL redirects
+8. Trust cues on budget cards
 
+## Out of Scope (Not Changing)
+
+- Existing Landing, RegionSelector, TripSetupForm, BudgetPlansPage, SavedTripsPage, SharedTrip, Razorpay integration, saved trips flow.
+- Mock services (`geminiService.ts`, `authService.ts`, `bookingService.ts`) — the app already uses real Supabase edge functions; wrapping them in additional mock service modules would duplicate work. Instead, existing edge functions are extended to return the spec-required fields.
+- Landing page reviews/founders/recommended-trips restructure — already covered.
+
+## Assumptions Flagged
+
+- "Premium" = any paid tier (silver/gold/platinum). Basic = free.
+- Onboarding OTP for mobile is mocked (no SMS provider wired); Gmail path resolves immediately since user is already authed via Supabase.
+- MapView remains a static illustrative component; no real Google Maps SDK yet.
+- Prior user directive removing gating on PDF/email/share is being reverted per this new spec.
+
+Confirm to proceed, or tell me which gaps to skip.
