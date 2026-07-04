@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -13,231 +13,178 @@ import TripDashboard from '@/components/TripDashboard';
 import SubscriptionPage from '@/components/SubscriptionPage';
 import SavedTripsPage from '@/components/SavedTripsPage';
 import TripPreferences from '@/components/TripPreferences';
+import OnboardingFlow from '@/components/OnboardingFlow';
+import DayEditor from '@/components/DayEditor';
+import LiveMapScreen from '@/components/LiveMapScreen';
+import LockedOverlay from '@/components/LockedOverlay';
 import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
-import { TripSetup, TripPlan, UserRegion, regionCurrencies } from '@/types/trip';
+import { TripSetup, TripPlan, UserRegion } from '@/types/trip';
 import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProfile } from '@/hooks/useProfile';
+import { canAccess, FREE_DAYS_VISIBLE } from '@/lib/entitlements';
 import { toast } from 'sonner';
 
-type AppStep = 'landing' | 'auth' | 'region' | 'setup' | 'budget' | 'preferences' | 'loading' | 'plan' | 'subscribe' | 'saved-trips';
-type Tab = 'dashboard' | 'itinerary' | 'budget';
+type AppStep = 'landing' | 'auth' | 'onboarding' | 'region' | 'setup' | 'budget' | 'preferences' | 'loading' | 'plan' | 'subscribe' | 'saved-trips' | 'day-editor' | 'live-map';
+type Tab = 'dashboard' | 'itinerary' | 'budget' | 'map';
 
 const Index = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { profile, update: updateProfile } = useProfile();
   const [step, setStep] = useState<AppStep>('landing');
   const [homeRegion, setHomeRegion] = useState<UserRegion>('india');
   const [tripSetup, setTripSetup] = useState<TripSetup | null>(null);
   const [plan, setPlan] = useState<TripPlan | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
-  const [selectedPlaces, setSelectedPlaces] = useState<string[]>([]);
-  const [customPlaces, setCustomPlaces] = useState<string[]>([]);
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [pdfExportedForTrip, setPdfExportedForTrip] = useState(false);
+  const [currentSavedTripId, setCurrentSavedTripId] = useState<string | null>(null);
+
+  const userPlan = profile?.plan ?? 'basic';
 
   const handleGetStarted = () => {
-    if (user) {
-      setStep('region');
-    } else {
-      setStep('auth');
-    }
+    if (!user) return setStep('auth');
+    if (profile && !profile.has_completed_onboarding) return setStep('onboarding');
+    setStep('region');
   };
 
-  const handleAuthSuccess = () => setStep('region');
-
-  const handleRegionSelect = (region: UserRegion) => {
-    setHomeRegion(region);
-    setStep('setup');
+  const handleAuthSuccess = () => {
+    if (profile && !profile.has_completed_onboarding) setStep('onboarding');
+    else setStep('region');
   };
 
-  const handleTripSetup = (setup: TripSetup) => {
-    setTripSetup(setup);
-    setStep('budget');
-  };
-
+  const handleRegionSelect = (region: UserRegion) => { setHomeRegion(region); setStep('setup'); };
+  const handleTripSetup = (setup: TripSetup) => { setTripSetup(setup); setStep('budget'); };
   const handleBudgetSelect = async (budget: number) => {
     if (!tripSetup) return;
-    const finalSetup = { ...tripSetup, userBudget: budget };
-    setTripSetup(finalSetup);
+    setTripSetup({ ...tripSetup, userBudget: budget });
     setStep('preferences');
   };
 
   const generateTrip = async (places: string[] = [], custom: string[] = []) => {
     if (!tripSetup) return;
-    setSelectedPlaces(places);
-    setCustomPlaces(custom);
     setStep('loading');
-
-    const finalSetup = tripSetup;
-
     try {
       const { data, error } = await supabase.functions.invoke('generate-trip', {
         body: {
-          origin: finalSetup.origin,
-          destination: finalSetup.destination,
-          days: finalSetup.days,
-          travelers: finalSetup.travelers,
-          travelerBreakdown: finalSetup.travelerBreakdown,
-          userBudget: finalSetup.userBudget,
-          currency: finalSetup.currencyCode,
-          homeCurrency: finalSetup.homeCurrency,
-          homeCurrencyCode: finalSetup.homeCurrencyCode,
-          destCurrencySymbol: finalSetup.currency,
-          tripType: finalSetup.tripType,
-          pace: finalSetup.pace,
-          startDate: finalSetup.startDate,
-          selectedPlaces: places,
-          customPlaces: custom,
+          origin: tripSetup.origin, destination: tripSetup.destination, days: tripSetup.days,
+          travelers: tripSetup.travelers, travelerBreakdown: tripSetup.travelerBreakdown,
+          userBudget: tripSetup.userBudget, currency: tripSetup.currencyCode,
+          homeCurrency: tripSetup.homeCurrency, homeCurrencyCode: tripSetup.homeCurrencyCode,
+          destCurrencySymbol: tripSetup.currency, tripType: tripSetup.tripType, pace: tripSetup.pace,
+          startDate: tripSetup.startDate, selectedPlaces: places, customPlaces: custom,
         },
       });
-
       if (error) throw error;
-      if (data?.error) {
-        toast.error(data.error);
-        setStep('preferences');
-        return;
-      }
+      if (data?.error) { toast.error(data.error); setStep('preferences'); return; }
 
       const aiDays = data.days || [];
-      
-      // Warn if AI returned fewer days than requested
-      if (aiDays.length < finalSetup.days) {
-        toast.warning(`AI generated ${aiDays.length} of ${finalSetup.days} days. Some days may be missing.`);
+      if (aiDays.length < tripSetup.days) {
+        toast.warning(`AI generated ${aiDays.length} of ${tripSetup.days} days.`);
       }
-
       const tripPlan: TripPlan = {
-        setup: finalSetup,
-        days: aiDays,
+        setup: tripSetup, days: aiDays,
         budget: {
           ...(data.budget || {
-            userBudget: finalSetup.userBudget,
-            minimumBudget: finalSetup.userBudget * 0.8,
-            comfortableBudget: finalSetup.userBudget,
-            idealBudget: finalSetup.userBudget * 1.3,
-            currency: finalSetup.currency,
-            tips: [],
-            breakdown: [],
+            userBudget: tripSetup.userBudget,
+            minimumBudget: tripSetup.userBudget * 0.8,
+            comfortableBudget: tripSetup.userBudget,
+            idealBudget: tripSetup.userBudget * 1.3,
+            currency: tripSetup.currency, tips: [], breakdown: [],
           }),
-          homeCurrency: finalSetup.homeCurrency,
+          homeCurrency: tripSetup.homeCurrency,
         },
-        hotels: data.hotels || [],
-        flights: data.flights || [],
-        returnFlights: data.returnFlights || [],
+        hotels: data.hotels || [], flights: data.flights || [], returnFlights: data.returnFlights || [],
       };
-
       setPlan(tripPlan);
+      setPdfExportedForTrip(false);
+      setCurrentSavedTripId(null);
       setStep('plan');
-      toast.success('Your AI trip plan is ready!');
-    } catch (e: any) {
+      toast.success('Your trip plan is ready!');
+    } catch (e) {
       console.error('AI plan error:', e);
       toast.error('AI planning failed. Using smart fallback...');
-      const fallback = generateMockTripPlan(finalSetup);
-      setPlan(fallback);
-      setStep('plan');
+      const fallback = generateMockTripPlan(tripSetup);
+      setPlan(fallback); setStep('plan');
     }
   };
 
   const handleExportPdf = () => {
+    if (!canAccess(userPlan, 'unlimitedPdf') && pdfExportedForTrip) {
+      toast.error('Free PDF export used for this trip. Upgrade for unlimited exports.');
+      return;
+    }
     window.print();
-    toast.success('Print dialog opened! Save as PDF from there.');
+    setPdfExportedForTrip(true);
+    if (currentSavedTripId) {
+      supabase.from('saved_trips').update({ pdf_exported_once: true }).eq('id', currentSavedTripId);
+    }
+    toast.success('Print dialog opened.');
   };
 
   const handleEmailTrip = () => {
     if (!plan) return;
     const subject = encodeURIComponent(`Trip Plan: ${plan.setup.origin} → ${plan.setup.destination}`);
     const body = encodeURIComponent(
-      `Check out my trip plan!\n\n` +
-      `📍 ${plan.setup.origin} → ${plan.setup.destination}\n` +
-      `📅 ${plan.days.length} days starting ${plan.setup.startDate}\n` +
-      `👥 ${plan.setup.travelers} travelers\n` +
-      `💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n` +
-      `Day-by-day highlights:\n` +
-      plan.days.map(d =>
-        `Day ${d.day}: ${d.title} - ${d.places.map(p => p.name).join(', ')}`
-      ).join('\n') +
-      `\n\nPlanned with TripGenius ✈️`
+      `Check out my trip plan!\n\n📍 ${plan.setup.origin} → ${plan.setup.destination}\n📅 ${plan.days.length} days\n\n` +
+      plan.days.map(d => `Day ${d.day}: ${d.title}`).join('\n') + `\n\nPlanned with TripGenius ✈️`
     );
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
-    toast.success('Email composer opened!');
   };
 
   const handleShare = async () => {
     if (!plan) return;
-    const shareText = `🌍 My Trip Plan\n📍 ${plan.setup.origin} → ${plan.setup.destination}\n📅 ${plan.days.length} days\n💰 Budget: ${plan.setup.homeCurrency}${plan.budget.userBudget.toLocaleString()}\n\n✈️ Planned with TripGenius`;
-    
+    if (!canAccess(userPlan, 'shareTrip')) { setStep('subscribe'); return; }
+    const shareText = `🌍 ${plan.setup.origin} → ${plan.setup.destination} · ${plan.days.length} days · Planned with TripGenius`;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: `Trip: ${plan.setup.origin} → ${plan.setup.destination}`, text: shareText });
-        toast.success('Shared successfully!');
-      } catch {
-        // User cancelled
-      }
+      try { await navigator.share({ title: 'My Trip', text: shareText }); } catch {}
     } else {
       await navigator.clipboard.writeText(shareText);
-      toast.success('Trip details copied to clipboard! 📋');
+      toast.success('Copied to clipboard!');
     }
   };
 
   const handleShareLink = async () => {
-    if (!plan || !user) {
-      toast.error('Please sign in to create a share link.');
-      return;
-    }
+    if (!plan || !user) return;
+    if (!canAccess(userPlan, 'shareTrip')) { setStep('subscribe'); return; }
     try {
-      const { data, error } = await supabase
-        .from('shared_trips')
-        .insert({
-          created_by: user.id,
-          trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
-          origin: plan.setup.origin,
-          destination: plan.setup.destination,
-          trip_data: plan as any,
-        })
-        .select('share_id')
-        .single();
-
+      const { data, error } = await supabase.from('shared_trips').insert({
+        created_by: user.id, trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
+        origin: plan.setup.origin, destination: plan.setup.destination, trip_data: plan as any,
+      }).select('share_id').single();
       if (error) throw error;
       const url = `${window.location.origin}/shared/${data.share_id}`;
       await navigator.clipboard.writeText(url);
-      toast.success('Share link copied to clipboard! 🔗');
-    } catch (e: any) {
-      console.error('Share link error:', e);
-      toast.error('Failed to create share link.');
-    }
+      toast.success('Share link copied! 🔗');
+    } catch (e) { toast.error('Failed to create share link.'); }
   };
 
   const handleSaveTrip = async () => {
-    if (!plan || !user) {
-      toast.error('Please sign in to save trips.');
-      return;
-    }
-
+    if (!plan || !user) return;
+    if (!canAccess(userPlan, 'saveTrip')) { setStep('subscribe'); return; }
     try {
-      const { error } = await supabase.from('saved_trips').insert({
-        user_id: user.id,
-        plan_id: 'basic',
+      const { data, error } = await supabase.from('saved_trips').insert({
+        user_id: user.id, plan_id: userPlan,
         trip_name: `${plan.setup.origin} → ${plan.setup.destination}`,
-        origin: plan.setup.origin,
-        destination: plan.setup.destination,
-        start_date: plan.setup.startDate,
-        days: plan.days.length,
-        travelers: plan.setup.travelers,
-        trip_data: plan as any,
-      });
-
+        origin: plan.setup.origin, destination: plan.setup.destination,
+        start_date: plan.setup.startDate, days: plan.days.length,
+        travelers: plan.setup.travelers, trip_data: plan as any,
+      }).select('id').single();
       if (error) throw error;
-      toast.success('Trip saved successfully! 🎉');
-    } catch (e: any) {
-      console.error('Save trip error:', e);
-      toast.error('Failed to save trip. Please try again.');
-    }
+      setCurrentSavedTripId(data.id);
+      toast.success('Trip saved! 🎉');
+    } catch (e) { toast.error('Failed to save trip.'); }
   };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: t('dashboard'), icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: 'itinerary', label: t('itinerary'), icon: <CalendarDays className="w-4 h-4" /> },
+    { id: 'map', label: 'Live Map', icon: <MapIcon className="w-4 h-4" /> },
     { id: 'budget', label: t('budget'), icon: <Wallet className="w-4 h-4" /> },
   ];
 
@@ -246,20 +193,16 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {(step === 'plan' || step === 'budget' || step === 'setup' || step === 'subscribe' || step === 'saved-trips' || step === 'preferences') && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  if (step === 'plan') setStep('budget');
-                  else if (step === 'preferences') setStep('budget');
-                  else if (step === 'budget') setStep('setup');
-                  else if (step === 'setup') setStep('region');
-                  else if (step === 'subscribe') setStep('plan');
-                  else if (step === 'saved-trips') setStep('region');
-                }}
-                className="text-muted-foreground"
-              >
+            {['plan','budget','setup','subscribe','saved-trips','preferences','day-editor'].includes(step) && (
+              <Button variant="ghost" size="icon" onClick={() => {
+                if (step === 'plan') setStep('budget');
+                else if (step === 'preferences') setStep('budget');
+                else if (step === 'budget') setStep('setup');
+                else if (step === 'setup') setStep('region');
+                else if (step === 'subscribe') setStep(plan ? 'plan' : 'region');
+                else if (step === 'saved-trips') setStep('region');
+                else if (step === 'day-editor') setStep('plan');
+              }} className="text-muted-foreground">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             )}
@@ -269,43 +212,25 @@ const Index = () => {
               </h1>
               {step === 'plan' && plan && (
                 <p className="text-xs text-muted-foreground">
-                  {plan.setup.origin} → {plan.setup.destination} · {plan.days.length} {t('days')} · {plan.setup.travelers} {t('travelers')}
+                  {plan.setup.origin} → {plan.setup.destination} · {plan.days.length} {t('days')}
                 </p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {user && (step === 'region' || step === 'setup' || step === 'plan') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep('saved-trips')}
-                className="gap-1"
-              >
-                <FolderOpen className="w-4 h-4" />
-                My Trips
+            {user && ['region','setup','plan'].includes(step) && (
+              <Button variant="ghost" size="sm" onClick={() => setStep('saved-trips')} className="gap-1">
+                <FolderOpen className="w-4 h-4" /> My Trips
               </Button>
             )}
-            {user && (step === 'plan' || step === 'region' || step === 'setup') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep('subscribe')}
-                className="gap-1 text-warning"
-              >
-                <Crown className="w-4 h-4" />
-                Upgrade
+            {user && ['plan','region','setup'].includes(step) && (
+              <Button variant="ghost" size="sm" onClick={() => setStep('subscribe')} className="gap-1 text-warning">
+                <Crown className="w-4 h-4" /> Upgrade
               </Button>
             )}
             {step === 'plan' && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleSaveTrip}
-                className="gap-1"
-              >
-                <Save className="w-4 h-4" />
-                Save
+              <Button variant="ghost" size="sm" onClick={handleSaveTrip} className="gap-1">
+                <Save className="w-4 h-4" /> Save
               </Button>
             )}
             <LanguageSelector />
@@ -314,19 +239,16 @@ const Index = () => {
         </div>
 
         {step === 'plan' && (
-          <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-2">
+          <div className="max-w-5xl mx-auto px-4 flex gap-1 pb-2 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-glow'
-                    : 'text-muted-foreground hover:bg-secondary'
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTab === tab.id ? 'bg-primary text-primary-foreground shadow-glow' : 'text-muted-foreground hover:bg-secondary'
                 }`}
               >
-                {tab.icon}
-                {tab.label}
+                {tab.icon}{tab.label}
               </button>
             ))}
           </div>
@@ -335,69 +257,40 @@ const Index = () => {
 
       <main className={step === 'plan' ? 'max-w-5xl mx-auto px-4 py-8 pt-28' : ''}>
         <AnimatePresence mode="wait">
-          {step === 'landing' && (
-            <LandingPage key="landing" onGetStarted={handleGetStarted} />
+          {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} />}
+          {step === 'auth' && <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />}
+          {step === 'onboarding' && (
+            <OnboardingFlow key="onboarding" onComplete={() => setStep('region')} onUpgrade={() => setStep('subscribe')} />
           )}
-
-          {step === 'auth' && (
-            <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />
-          )}
-
-          {step === 'region' && (
-            <RegionSelector key="region" onSelect={handleRegionSelect} />
-          )}
-
+          {step === 'region' && <RegionSelector key="region" onSelect={handleRegionSelect} />}
           {step === 'setup' && (
-            <TripSetupForm
-              key="setup"
-              homeRegion={homeRegion}
-              onSubmit={handleTripSetup}
-              onBack={() => setStep('region')}
-            />
+            <TripSetupForm key="setup" homeRegion={homeRegion} onSubmit={handleTripSetup} onBack={() => setStep('region')} />
           )}
-
           {step === 'budget' && tripSetup && (
-            <BudgetPlansPage
-              key="budget"
-              setup={tripSetup}
-              onSelectBudget={handleBudgetSelect}
-              onBack={() => setStep('setup')}
-            />
+            <BudgetPlansPage key="budget" setup={tripSetup} onSelectBudget={handleBudgetSelect} onBack={() => setStep('setup')} />
           )}
-
           {step === 'preferences' && tripSetup && (
-            <TripPreferences
-              key="preferences"
-              destination={tripSetup.destination}
+            <TripPreferences key="preferences" destination={tripSetup.destination}
               onSubmit={(places, custom) => generateTrip(places, custom)}
-              onSkip={() => generateTrip()}
-              onBack={() => setStep('budget')}
-            />
+              onSkip={() => generateTrip()} onBack={() => setStep('budget')} />
           )}
-
           {step === 'loading' && tripSetup && (
             <LoadingScreen key="loading" origin={tripSetup.origin} destination={tripSetup.destination} />
           )}
-
           {step === 'subscribe' && (
-            <SubscriptionPage
-              key="subscribe"
-              onBack={() => setStep('plan')}
-              currentPlan="basic"
-              onSubscribe={() => setStep('plan')}
-            />
+            <SubscriptionPage key="subscribe" onBack={() => setStep(plan ? 'plan' : 'region')} currentPlan={userPlan}
+              onSubscribe={async (newPlan?: string) => {
+                if (newPlan) await updateProfile({ plan: newPlan });
+                setStep(plan ? 'plan' : 'region');
+              }} />
           )}
-
           {step === 'saved-trips' && (
-            <SavedTripsPage
-              key="saved-trips"
-              onBack={() => setStep('region')}
-              onLoadTrip={(tripPlan) => {
-                setPlan(tripPlan);
-                setTripSetup(tripPlan.setup);
-                setStep('plan');
-              }}
-            />
+            <SavedTripsPage key="saved-trips" onBack={() => setStep('region')}
+              onLoadTrip={(tripPlan) => { setPlan(tripPlan); setTripSetup(tripPlan.setup); setStep('plan'); }} />
+          )}
+          {step === 'day-editor' && plan && editingDay != null && (
+            <DayEditor key="day-editor" plan={plan} dayNumber={editingDay}
+              onSave={(next) => setPlan(next)} onBack={() => setStep('plan')} />
           )}
 
           {step === 'plan' && plan && (
@@ -405,9 +298,11 @@ const Index = () => {
               {activeTab === 'dashboard' && <TripDashboard plan={plan} onViewItinerary={() => setActiveTab('itinerary')} />}
               {activeTab === 'itinerary' && (
                 <div className="space-y-4">
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 rounded-xl">
-                      <Download className="w-4 h-4" /> Export PDF
+                  <div className="flex gap-2 justify-end flex-wrap">
+                    <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-1.5 rounded-xl"
+                      disabled={!canAccess(userPlan, 'unlimitedPdf') && pdfExportedForTrip}>
+                      <Download className="w-4 h-4" />
+                      {!canAccess(userPlan, 'unlimitedPdf') && pdfExportedForTrip ? 'PDF used' : 'Export PDF'}
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleEmailTrip} className="gap-1.5 rounded-xl">
                       <Mail className="w-4 h-4" /> Email Trip
@@ -419,15 +314,40 @@ const Index = () => {
                       <Link2 className="w-4 h-4" /> Copy Link
                     </Button>
                   </div>
-                  {plan.days.map((day, i) => (
-                    <DayItinerary
-                      key={day.day}
-                      dayPlan={day}
-                      currency={plan.budget.currency}
-                      homeCurrency={plan.setup.homeCurrency}
-                    />
-                  ))}
+
+                  {!canAccess(userPlan, 'unlimitedPdf') && (
+                    <p className="text-xs text-muted-foreground text-right">
+                      Free tier: 1 PDF export per trip. Save & Share require Premium.
+                    </p>
+                  )}
+
+                  {plan.days.map((day, i) => {
+                    const locked = !canAccess(userPlan, 'fullItinerary') && i >= FREE_DAYS_VISIBLE;
+                    if (locked) {
+                      return (
+                        <LockedOverlay key={day.day} feature="fullItinerary" onUnlock={() => setStep('subscribe')}>
+                          <DayItinerary dayPlan={day} currency={plan.budget.currency} homeCurrency={plan.setup.homeCurrency} />
+                        </LockedOverlay>
+                      );
+                    }
+                    return (
+                      <div key={day.day} className="relative">
+                        <DayItinerary dayPlan={day} currency={plan.budget.currency} homeCurrency={plan.setup.homeCurrency} />
+                        {canAccess(userPlan, 'dayEditing') && (
+                          <button
+                            onClick={() => { setEditingDay(day.day); setStep('day-editor'); }}
+                            className="absolute top-3 right-16 text-xs text-primary hover:underline"
+                          >
+                            ✎ Edit day
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
+              )}
+              {activeTab === 'map' && (
+                <LiveMapScreen plan={plan} userPlan={userPlan} onUpgrade={() => setStep('subscribe')} />
               )}
               {activeTab === 'budget' && <BudgetIntelligence budget={plan.budget} />}
             </div>

@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string
+          has_completed_onboarding: boolean
+          id: string
+          notification_choice: string | null
+          plan: string
+          show_name_to_companions: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          has_completed_onboarding?: boolean
+          id: string
+          notification_choice?: string | null
+          plan?: string
+          show_name_to_companions?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          has_completed_onboarding?: boolean
+          id?: string
+          notification_choice?: string | null
+          plan?: string
+          show_name_to_companions?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       saved_trips: {
         Row: {
           created_at: string
@@ -21,6 +51,7 @@ export type Database = {
           destination: string
           id: string
           origin: string
+          pdf_exported_once: boolean
           plan_id: string
           start_date: string
           travelers: number
@@ -35,6 +66,7 @@ export type Database = {
           destination: string
           id?: string
           origin: string
+          pdf_exported_once?: boolean
           plan_id?: string
           start_date: string
           travelers?: number
@@ -49,6 +81,7 @@ export type Database = {
           destination?: string
           id?: string
           origin?: string
+          pdf_exported_once?: boolean
           plan_id?: string
           start_date?: string
           travelers?: number
