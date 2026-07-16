@@ -1,16 +1,20 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star } from 'lucide-react';
+import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star, ShieldCheck, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from './HeroCarousel';
+import SampleTripsSection from './SampleTripsSection';
+import Footer from './Footer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reviews } from '@/data/reviews';
+import { SampleTrip } from '@/data/sampleTrips';
 
 interface LandingPageProps {
   onGetStarted: () => void;
+  onPlanFromSample?: (trip: SampleTrip) => void;
 }
 
-export default function LandingPage({ onGetStarted }: LandingPageProps) {
+export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingPageProps) {
   const { t } = useLanguage();
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
 
