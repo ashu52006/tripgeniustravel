@@ -195,7 +195,31 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
             </div>
           </motion.div>
         </div>
+
+        {/* Sample Trips */}
+        {onPlanFromSample && <SampleTripsSection onPlanLikeThis={onPlanFromSample} />}
+
+        {/* Trust bar */}
+        <div className="max-w-5xl mx-auto px-4 pb-16">
+          <div className="glass-strong rounded-3xl p-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            {[
+              { icon: <Zap className="w-6 h-6" />, title: 'Ready in seconds', desc: 'Full itinerary in under 10s' },
+              { icon: <ShieldCheck className="w-6 h-6" />, title: 'Trusted planning', desc: 'Dual-currency, transparent costs' },
+              { icon: <Star className="w-6 h-6" />, title: '4.9 / 5 rating', desc: `From ${reviews.length}+ real travellers` },
+            ].map((it) => (
+              <div key={it.title} className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center mb-2">
+                  {it.icon}
+                </div>
+                <h4 className="font-semibold text-foreground">{it.title}</h4>
+                <p className="text-sm text-muted-foreground">{it.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
