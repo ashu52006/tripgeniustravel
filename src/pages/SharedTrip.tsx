@@ -19,16 +19,14 @@ export default function SharedTrip() {
   useEffect(() => {
     const load = async () => {
       if (!shareId) return;
-      const { data, error: err } = await supabase
-        .from('shared_trips')
-        .select('trip_data, trip_name')
-        .eq('share_id', shareId)
-        .maybeSingle();
+      const { data, error: err } = await (supabase as any)
+        .rpc('get_shared_trip', { _share_id: shareId });
 
-      if (err || !data) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (err || !row) {
         setError('Trip not found or link expired.');
       } else {
-        setPlan(data.trip_data as unknown as TripPlan);
+        setPlan(row.trip_data as unknown as TripPlan);
       }
       setLoading(false);
     };
