@@ -55,6 +55,13 @@ const Index = () => {
     setStep('region');
   };
 
+  const handlePlanFromSample = (trip: SampleTrip) => {
+    setSamplePrefill(trip);
+    if (!user) return setStep('auth');
+    if (profile && !profile.has_completed_onboarding) return setStep('onboarding');
+    setStep('setup');
+  };
+
   const handleAuthSuccess = () => {
     if (profile && !profile.has_completed_onboarding) setStep('onboarding');
     else setStep('region');
