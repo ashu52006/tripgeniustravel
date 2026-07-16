@@ -266,7 +266,7 @@ const Index = () => {
 
       <main className={step === 'plan' ? 'max-w-5xl mx-auto px-4 py-8 pt-28' : ''}>
         <AnimatePresence mode="wait">
-          {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} />}
+          {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} onPlanFromSample={handlePlanFromSample} />}
           {step === 'auth' && <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />}
           {step === 'onboarding' && (
             <OnboardingFlow key="onboarding" onComplete={() => setStep('region')} onUpgrade={() => setStep('subscribe')} />
