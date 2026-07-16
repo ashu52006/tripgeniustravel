@@ -21,6 +21,7 @@ import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
 import { TripSetup, TripPlan, UserRegion } from '@/types/trip';
+import { SampleTrip } from '@/data/sampleTrips';
 import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +45,7 @@ const Index = () => {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [pdfExportedForTrip, setPdfExportedForTrip] = useState(false);
   const [currentSavedTripId, setCurrentSavedTripId] = useState<string | null>(null);
+  const [samplePrefill, setSamplePrefill] = useState<SampleTrip | null>(null);
 
   const userPlan = profile?.plan ?? 'basic';
 
@@ -51,6 +53,13 @@ const Index = () => {
     if (!user) return setStep('auth');
     if (profile && !profile.has_completed_onboarding) return setStep('onboarding');
     setStep('region');
+  };
+
+  const handlePlanFromSample = (trip: SampleTrip) => {
+    setSamplePrefill(trip);
+    if (!user) return setStep('auth');
+    if (profile && !profile.has_completed_onboarding) return setStep('onboarding');
+    setStep('setup');
   };
 
   const handleAuthSuccess = () => {
@@ -257,14 +266,14 @@ const Index = () => {
 
       <main className={step === 'plan' ? 'max-w-5xl mx-auto px-4 py-8 pt-28' : ''}>
         <AnimatePresence mode="wait">
-          {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} />}
+          {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} onPlanFromSample={handlePlanFromSample} />}
           {step === 'auth' && <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />}
           {step === 'onboarding' && (
             <OnboardingFlow key="onboarding" onComplete={() => setStep('region')} onUpgrade={() => setStep('subscribe')} />
           )}
           {step === 'region' && <RegionSelector key="region" onSelect={handleRegionSelect} />}
           {step === 'setup' && (
-            <TripSetupForm key="setup" homeRegion={homeRegion} onSubmit={handleTripSetup} onBack={() => setStep('region')} />
+            <TripSetupForm key="setup" homeRegion={homeRegion} onSubmit={handleTripSetup} onBack={() => setStep('region')} prefill={samplePrefill ? { origin: samplePrefill.origin, destination: samplePrefill.destination, days: samplePrefill.days } : undefined} />
           )}
           {step === 'budget' && tripSetup && (
             <BudgetPlansPage key="budget" setup={tripSetup} onSelectBudget={handleBudgetSelect} onBack={() => setStep('setup')} />

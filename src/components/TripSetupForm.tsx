@@ -38,6 +38,7 @@ interface TripSetupFormProps {
   homeRegion: UserRegion;
   onSubmit: (setup: TripSetup) => void;
   onBack: () => void;
+  prefill?: { origin?: string; destination?: string; days?: number };
 }
 
 function useCitySuggestions() {
@@ -66,13 +67,22 @@ function useCitySuggestions() {
   return { suggestions, loading, search, clear };
 }
 
-export default function TripSetupForm({ homeRegion, onSubmit, onBack }: TripSetupFormProps) {
+export default function TripSetupForm({ homeRegion, onSubmit, onBack, prefill }: TripSetupFormProps) {
   const { t } = useLanguage();
   const homeCurrency = regionCurrencies[homeRegion];
 
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [origin, setOrigin] = useState(prefill?.origin ?? '');
+  const [destination, setDestination] = useState(prefill?.destination ?? '');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    if (prefill?.days && prefill.days > 0) {
+      const from = new Date();
+      from.setDate(from.getDate() + 14);
+      const to = new Date(from);
+      to.setDate(to.getDate() + prefill.days - 1);
+      return { from, to };
+    }
+    return undefined;
+  });
   const [maleCount, setMaleCount] = useState(1);
   const [femaleCount, setFemaleCount] = useState(0);
   const [kidsCount, setKidsCount] = useState(0);
