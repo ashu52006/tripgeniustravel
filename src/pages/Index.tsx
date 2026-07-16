@@ -273,7 +273,7 @@ const Index = () => {
           )}
           {step === 'region' && <RegionSelector key="region" onSelect={handleRegionSelect} />}
           {step === 'setup' && (
-            <TripSetupForm key="setup" homeRegion={homeRegion} onSubmit={handleTripSetup} onBack={() => setStep('region')} />
+            <TripSetupForm key="setup" homeRegion={homeRegion} onSubmit={handleTripSetup} onBack={() => setStep('region')} prefill={samplePrefill ? { origin: samplePrefill.origin, destination: samplePrefill.destination, days: samplePrefill.days } : undefined} />
           )}
           {step === 'budget' && tripSetup && (
             <BudgetPlansPage key="budget" setup={tripSetup} onSelectBudget={handleBudgetSelect} onBack={() => setStep('setup')} />
