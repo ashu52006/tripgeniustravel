@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import SharedTrip from "./pages/SharedTrip";
+import Policies from "./pages/Policies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,12 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/shared/:shareId" element={<SharedTrip />} />
+              <Route path="/privacy" element={<Policies kind="privacy" />} />
+              <Route path="/terms" element={<Policies kind="terms" />} />
+              <Route path="/refund" element={<Policies kind="refund" />} />
+              <Route path="/cookies" element={<Policies kind="cookies" />} />
+              <Route path="/about" element={<Policies kind="about" />} />
+              <Route path="/contact" element={<Policies kind="contact" />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
