@@ -21,6 +21,7 @@ import AuthButton from '@/components/AuthButton';
 import AuthGate from '@/components/AuthGate';
 import LanguageSelector from '@/components/LanguageSelector';
 import { TripSetup, TripPlan, UserRegion } from '@/types/trip';
+import { SampleTrip } from '@/data/sampleTrips';
 import { generateMockTripPlan } from '@/data/mockTripData';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +45,7 @@ const Index = () => {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [pdfExportedForTrip, setPdfExportedForTrip] = useState(false);
   const [currentSavedTripId, setCurrentSavedTripId] = useState<string | null>(null);
+  const [samplePrefill, setSamplePrefill] = useState<SampleTrip | null>(null);
 
   const userPlan = profile?.plan ?? 'basic';
 
