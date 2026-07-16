@@ -19,7 +19,7 @@ export default function SharedTrip() {
   useEffect(() => {
     const load = async () => {
       if (!shareId) return;
-      const { data, error: err } = await supabase
+      const { data, error: err } = await (supabase as any)
         .rpc('get_shared_trip', { _share_id: shareId });
 
       const row = Array.isArray(data) ? data[0] : data;
