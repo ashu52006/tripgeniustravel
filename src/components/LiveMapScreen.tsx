@@ -1,6 +1,6 @@
 /// <reference types="google.maps" />
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation2, Wallet, Loader2, Locate, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation2, Wallet, Loader2, Locate, AlertCircle, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import LockedOverlay from './LockedOverlay';
