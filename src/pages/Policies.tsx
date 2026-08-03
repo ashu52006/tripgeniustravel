@@ -2,6 +2,16 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, MapPin, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
+import { useSeo } from '@/hooks/useSeo';
+
+const META: Record<string, string> = {
+  privacy: 'How TripGenius collects, uses and protects your travel planning data.',
+  terms: 'Terms of service for using the TripGenius AI travel planning platform.',
+  refund: 'Refund and cancellation policy for TripGenius subscription plans.',
+  cookies: 'How TripGenius uses cookies and local storage across the app.',
+  about: 'About TripGenius — the AI travel planner that builds day-by-day itineraries.',
+  contact: 'Contact the TripGenius team for support, feedback or partnerships.',
+};
 
 type PolicyKind = 'privacy' | 'terms' | 'refund' | 'cookies' | 'about' | 'contact';
 
@@ -168,6 +178,7 @@ const CONTENT: Record<PolicyKind, { title: string; body: React.ReactNode }> = {
 
 export default function Policies({ kind }: { kind: PolicyKind }) {
   const { title, body } = CONTENT[kind];
+  useSeo({ title: `${title} | TripGenius`, description: META[kind] });
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 pt-12 pb-16">
