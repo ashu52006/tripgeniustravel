@@ -200,7 +200,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3">
             {['plan','budget','setup','subscribe','saved-trips','preferences','day-editor'].includes(step) && (
               <Button variant="ghost" size="icon" onClick={() => {
@@ -216,30 +216,30 @@ const Index = () => {
               </Button>
             )}
             <div>
-              <h1 className="text-xl font-display font-bold text-gradient-hero">
+              <h1 className="text-lg sm:text-xl font-display font-bold text-gradient-hero truncate max-w-[40vw] sm:max-w-none">
                 {step === 'plan' && plan ? plan.setup.destination : t('appName')}
               </h1>
               {step === 'plan' && plan && (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] sm:text-xs text-muted-foreground truncate max-w-[45vw] sm:max-w-none">
                   {plan.setup.origin} → {plan.setup.destination} · {plan.days.length} {t('days')}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {user && ['region','setup','plan'].includes(step) && (
               <Button variant="ghost" size="sm" onClick={() => setStep('saved-trips')} className="gap-1">
-                <FolderOpen className="w-4 h-4" /> My Trips
+                <FolderOpen className="w-4 h-4" /> <span className="hidden sm:inline">My Trips</span>
               </Button>
             )}
             {user && ['plan','region','setup'].includes(step) && (
               <Button variant="ghost" size="sm" onClick={() => setStep('subscribe')} className="gap-1 text-warning">
-                <Crown className="w-4 h-4" /> Upgrade
+                <Crown className="w-4 h-4" /> <span className="hidden sm:inline">Upgrade</span>
               </Button>
             )}
             {step === 'plan' && (
               <Button variant="ghost" size="sm" onClick={handleSaveTrip} className="gap-1">
-                <Save className="w-4 h-4" /> Save
+                <Save className="w-4 h-4" /> <span className="hidden sm:inline">Save</span>
               </Button>
             )}
             <LanguageSelector />
@@ -264,7 +264,7 @@ const Index = () => {
         )}
       </header>
 
-      <main className={step === 'plan' ? 'max-w-5xl mx-auto px-4 py-8 pt-28' : ''}>
+      <main className={step === 'plan' ? 'max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-8 pt-32 sm:pt-28' : ''}>
         <AnimatePresence mode="wait">
           {step === 'landing' && <LandingPage key="landing" onGetStarted={handleGetStarted} onPlanFromSample={handlePlanFromSample} />}
           {step === 'auth' && <AuthGate key="auth" onSuccess={handleAuthSuccess} onBack={() => setStep('landing')} />}

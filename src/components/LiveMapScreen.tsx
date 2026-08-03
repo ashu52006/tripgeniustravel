@@ -1,6 +1,6 @@
 /// <reference types="google.maps" />
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation2, Wallet, Loader2, Locate, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation2, Wallet, Loader2, Locate, AlertCircle, ExternalLink, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import LockedOverlay from './LockedOverlay';
@@ -18,14 +18,27 @@ const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_
 
 // Global loader — one script tag for entire app
 let mapsLoaderPromise: Promise<typeof google> | null = null;
+let mapsAuthFailed = false;
+const authFailureListeners = new Set<() => void>();
+
 function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === 'undefined') return Promise.reject(new Error('SSR'));
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (mapsLoaderPromise) return mapsLoaderPromise;
   if (!GOOGLE_KEY) return Promise.reject(new Error('Google Maps key missing'));
 
+  // Google calls this globally when the API key is rejected for this domain.
+  (window as any).gm_authFailure = () => {
+    mapsAuthFailed = true;
+    authFailureListeners.forEach((fn) => fn());
+  };
+
   mapsLoaderPromise = new Promise((resolve, reject) => {
-    (window as any).__initGoogleMaps = () => resolve((window as any).google);
+    const timer = setTimeout(() => reject(new Error('Map took too long to load')), 15000);
+    (window as any).__initGoogleMaps = () => {
+      clearTimeout(timer);
+      resolve((window as any).google);
+    };
     const s = document.createElement('script');
     const params = new URLSearchParams({
       key: GOOGLE_KEY,
@@ -37,27 +50,77 @@ function loadGoogleMaps(): Promise<typeof google> {
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
     s.defer = true;
-    s.onerror = () => reject(new Error('Failed to load Google Maps'));
+    s.onerror = () => {
+      clearTimeout(timer);
+      mapsLoaderPromise = null;
+      reject(new Error('Failed to load Google Maps'));
+    };
     document.head.appendChild(s);
   });
   return mapsLoaderPromise;
 }
 
+/** Resolves with the value, or `null` if the callback never fires in time. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
+}
+
+
 interface Coord { lat: number; lng: number; name: string }
+
+type GeoState =
+  | { kind: 'idle' }
+  | { kind: 'prompting' }
+  | { kind: 'tracking' }
+  | { kind: 'denied' }
+  | { kind: 'unavailable'; message: string };
+
+const geoMessage = (err: GeolocationPositionError): GeoState => {
+  if (err.code === err.PERMISSION_DENIED) return { kind: 'denied' };
+  if (err.code === err.TIMEOUT)
+    return { kind: 'unavailable', message: "Couldn't get a GPS fix in time. Move somewhere with a clearer sky view and try again." };
+  return { kind: 'unavailable', message: 'Your location is unavailable right now. You can still follow the route markers below.' };
+};
 
 function LiveMap({ places, destinationName }: { places: string[]; destinationName: string }) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
+  const accuracyRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState('');
-  const [tracking, setTracking] = useState(false);
+  const [geo, setGeo] = useState<GeoState>({ kind: 'idle' });
   const [coords, setCoords] = useState<Coord[]>([]);
+  const [attempt, setAttempt] = useState(0);
+
+  const routeUrl = places.length
+    ? `https://www.google.com/maps/dir/${places
+        .map((p) => encodeURIComponent(`${p}, ${destinationName}`))
+        .join('/')}`
+    : `https://www.google.com/maps/search/${encodeURIComponent(destinationName)}`;
+
+  // Surface Google key/domain rejections instead of spinning forever.
+  useEffect(() => {
+    const onFail = () => {
+      setError('This domain is not authorised for the Maps key yet');
+      setStatus('error');
+    };
+    if (mapsAuthFailed) onFail();
+    authFailureListeners.add(onFail);
+    return () => { authFailureListeners.delete(onFail); };
+  }, [attempt]);
 
   // Load map + geocode places
   useEffect(() => {
     let cancelled = false;
+    setStatus('loading');
+    const watchdog = setTimeout(() => {
+      if (!cancelled) {
+        setStatus((s) => (s === 'loading' ? 'error' : s));
+        setError((e) => e || 'The map is taking longer than expected');
+      }
+    }, 20000);
 
     (async () => {
       try {
@@ -67,12 +130,15 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
         // Geocode destination first for centre
         const geocoder = new google.maps.Geocoder();
         const geocode = (q: string) =>
-          new Promise<google.maps.LatLng | null>((resolve) => {
-            geocoder.geocode({ address: q }, (res, s) => {
-              if (s === 'OK' && res?.[0]) resolve(res[0].geometry.location);
-              else resolve(null);
-            });
-          });
+          withTimeout(
+            new Promise<google.maps.LatLng | null>((resolve) => {
+              geocoder.geocode({ address: q }, (res, s) => {
+                if (s === 'OK' && res?.[0]) resolve(res[0].geometry.location);
+                else resolve(null);
+              });
+            }),
+            8000,
+          );
 
         const centerLoc = await geocode(destinationName);
         const map = new google.maps.Map(mapDivRef.current, {
@@ -81,6 +147,8 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          gestureHandling: 'greedy',
+          zoomControl: true,
           styles: [
             { featureType: 'poi', stylers: [{ visibility: 'simplified' }] },
           ],
@@ -122,10 +190,13 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
         }
 
         if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
+        clearTimeout(watchdog);
+        if (mapsAuthFailed) throw new Error('This domain is not authorised for the Maps key yet');
         setCoords(collected);
         setStatus('ready');
       } catch (e: any) {
         if (!cancelled) {
+          clearTimeout(watchdog);
           setError(e?.message ?? 'Failed to load map');
           setStatus('error');
         }
@@ -134,36 +205,53 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
 
     return () => {
       cancelled = true;
+      clearTimeout(watchdog);
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
     };
-  }, [places.join('|'), destinationName]);
+  }, [places.join('|'), destinationName, attempt]);
 
-  const toggleTracking = () => {
-    if (!navigator.geolocation) {
-      setError('Geolocation not supported');
+  const stopTracking = () => {
+    if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+    watchIdRef.current = null;
+    userMarkerRef.current?.setMap(null);
+    userMarkerRef.current = null;
+    accuracyRef.current?.setMap(null);
+    accuracyRef.current = null;
+    setGeo({ kind: 'idle' });
+  };
+
+  const startTracking = async () => {
+    if (!('geolocation' in navigator)) {
+      setGeo({ kind: 'unavailable', message: 'This browser does not support location tracking.' });
       return;
     }
-    if (tracking) {
-      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-      userMarkerRef.current?.setMap(null);
-      userMarkerRef.current = null;
-      setTracking(false);
-      return;
+
+    // Pre-check permission so we can explain before the browser prompt appears.
+    try {
+      const perm = await (navigator as any).permissions?.query?.({ name: 'geolocation' });
+      if (perm?.state === 'denied') {
+        setGeo({ kind: 'denied' });
+        return;
+      }
+    } catch {
+      /* Permissions API unsupported — fall through to the normal prompt. */
     }
-    setTracking(true);
+
+    setGeo({ kind: 'prompting' });
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const google = (window as any).google;
         if (!google || !mapRef.current) return;
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGeo({ kind: 'tracking' });
+
         if (!userMarkerRef.current) {
           userMarkerRef.current = new google.maps.Marker({
             position: p,
             map: mapRef.current,
             icon: {
               path: google.maps.SymbolPath.CIRCLE,
-              scale: 10,
+              scale: 9,
               fillColor: '#22c55e',
               fillOpacity: 1,
               strokeColor: '#ffffff',
@@ -172,61 +260,154 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
             title: 'You are here',
             zIndex: 999,
           });
+          accuracyRef.current = new google.maps.Circle({
+            map: mapRef.current,
+            center: p,
+            radius: pos.coords.accuracy || 30,
+            strokeColor: '#22c55e',
+            strokeOpacity: 0.4,
+            strokeWeight: 1,
+            fillColor: '#22c55e',
+            fillOpacity: 0.12,
+          });
           mapRef.current.panTo(p);
         } else {
           userMarkerRef.current.setPosition(p);
+          accuracyRef.current?.setCenter(p);
+          accuracyRef.current?.setRadius(pos.coords.accuracy || 30);
         }
       },
       (err) => {
-        setError(err.message);
-        setTracking(false);
+        if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+        setGeo(geoMessage(err));
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
   };
 
+  const isTracking = geo.kind === 'tracking' || geo.kind === 'prompting';
+
   if (!GOOGLE_KEY) {
     return (
-      <div className="w-full h-[420px] rounded-2xl bg-secondary border border-border flex items-center justify-center text-sm text-muted-foreground">
-        <AlertCircle className="w-4 h-4 mr-2" /> Maps unavailable — connect Google Maps.
+      <div className="w-full rounded-2xl bg-secondary border border-border p-6 text-center space-y-3">
+        <AlertCircle className="w-5 h-5 mx-auto text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          Interactive map is unavailable right now, but your route still works.
+        </p>
+        <Button asChild variant="outline" size="sm" className="rounded-xl">
+          <a href={routeUrl} target="_blank" rel="noopener noreferrer">
+            Open route in Google Maps <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+          </a>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      <div ref={mapDivRef} className="w-full h-[420px] rounded-2xl overflow-hidden border border-border shadow-lg" />
-      {status === 'loading' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm rounded-2xl">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      )}
-      {status === 'error' && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded-2xl text-sm text-destructive">
-          {error}
-        </div>
-      )}
-      {status === 'ready' && (
-        <>
-          <Button
-            onClick={toggleTracking}
-            size="sm"
-            className={`absolute top-3 right-3 gap-1.5 rounded-full shadow-lg ${
-              tracking ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary'
-            }`}
-          >
-            <Locate className={`w-4 h-4 ${tracking ? 'animate-pulse' : ''}`} />
-            {tracking ? 'Stop tracking' : 'Track me'}
-          </Button>
-          <div className="absolute bottom-3 left-3 glass-strong rounded-xl px-3 py-2 text-xs flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-primary" />
-            <span>{coords.length} of {places.length} places plotted</span>
+    <div className="space-y-3">
+      <div className="relative">
+        <div
+          ref={mapDivRef}
+          className="w-full h-[300px] sm:h-[380px] lg:h-[440px] rounded-2xl overflow-hidden border border-border shadow-lg bg-secondary"
+        />
+
+        {status === 'loading' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-background/60 backdrop-blur-sm rounded-2xl">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <p className="text-xs text-muted-foreground">Plotting your route…</p>
           </div>
-        </>
+        )}
+
+        {status === 'error' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center bg-background/90 rounded-2xl">
+            <AlertCircle className="w-6 h-6 text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              We couldn't load the live map{error ? ` (${error})` : ''}.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <Button size="sm" variant="outline" className="rounded-xl gap-1.5" onClick={() => setAttempt((a) => a + 1)}>
+                <RefreshCw className="w-3.5 h-3.5" /> Try again
+              </Button>
+              <Button asChild size="sm" className="rounded-xl">
+                <a href={routeUrl} target="_blank" rel="noopener noreferrer">
+                  Open in Google Maps <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+                </a>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {status === 'ready' && (
+          <>
+            <Button
+              onClick={isTracking ? stopTracking : startTracking}
+              size="sm"
+              className={`absolute top-3 right-3 gap-1.5 rounded-full shadow-lg ${
+                isTracking ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary'
+              }`}
+            >
+              <Locate className={`w-4 h-4 ${isTracking ? 'animate-pulse' : ''}`} />
+              <span>{geo.kind === 'prompting' ? 'Locating…' : isTracking ? 'Stop tracking' : 'Track me'}</span>
+            </Button>
+            <div className="absolute bottom-3 left-3 glass-strong rounded-xl px-3 py-2 text-[11px] sm:text-xs flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>{coords.length} of {places.length} stops plotted</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Friendly, non-blocking location messaging */}
+      {geo.kind === 'denied' && (
+        <div className="rounded-xl border border-border bg-secondary/60 p-3 flex gap-3 text-xs sm:text-sm">
+          <ShieldAlert className="w-4 h-4 text-warning shrink-0 mt-0.5" />
+          <div className="space-y-1.5">
+            <p className="font-medium text-foreground">Location access is blocked</p>
+            <p className="text-muted-foreground">
+              Tap the lock icon in your browser's address bar, set <strong>Location</strong> to “Allow”,
+              then try again. Everything else on this map keeps working without it.
+            </p>
+            <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1.5" onClick={startTracking}>
+              <RefreshCw className="w-3.5 h-3.5" /> Retry
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {geo.kind === 'unavailable' && (
+        <div className="rounded-xl border border-border bg-secondary/60 p-3 flex gap-3 text-xs sm:text-sm">
+          <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="space-y-1.5">
+            <p className="text-muted-foreground">{geo.message}</p>
+            <Button size="sm" variant="outline" className="rounded-lg h-8 gap-1.5" onClick={startTracking}>
+              <RefreshCw className="w-3.5 h-3.5" /> Try again
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {geo.kind === 'tracking' && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+          Following your live location. Battery-friendly updates every few seconds.
+        </p>
+      )}
+
+      {status === 'ready' && (
+        <a
+          href={routeUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+        >
+          Open this route in Google Maps <ExternalLink className="w-3.5 h-3.5" />
+        </a>
       )}
     </div>
   );
 }
+
 
 export default function LiveMapScreen({ plan, userPlan, onUpgrade }: Props) {
   const allowed = canAccess(userPlan, 'liveMap');
@@ -246,16 +427,16 @@ export default function LiveMapScreen({ plan, userPlan, onUpgrade }: Props) {
   );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
       <div>
-        <h2 className="font-display text-2xl font-bold">Live Map & Tracking</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-display text-xl sm:text-2xl font-bold">Live Map &amp; Tracking</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Route through the day's stops. Tap <strong>Track me</strong> to follow your location live.
         </p>
       </div>
 
       {/* Day switcher */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none">
         {plan.days.map((d) => (
           <button
             key={d.day}
@@ -283,7 +464,7 @@ export default function LiveMapScreen({ plan, userPlan, onUpgrade }: Props) {
             <Wallet className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold">Day {selectedDay} spend estimate</span>
           </div>
-          <span className="text-sm">
+          <span className="text-xs sm:text-sm">
             {plan.setup.homeCurrency}{spent.toLocaleString()} / {plan.setup.homeCurrency}{dayBudget.toLocaleString()}
           </span>
         </div>
