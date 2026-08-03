@@ -18,14 +18,27 @@ const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_
 
 // Global loader — one script tag for entire app
 let mapsLoaderPromise: Promise<typeof google> | null = null;
+let mapsAuthFailed = false;
+const authFailureListeners = new Set<() => void>();
+
 function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === 'undefined') return Promise.reject(new Error('SSR'));
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (mapsLoaderPromise) return mapsLoaderPromise;
   if (!GOOGLE_KEY) return Promise.reject(new Error('Google Maps key missing'));
 
+  // Google calls this globally when the API key is rejected for this domain.
+  (window as any).gm_authFailure = () => {
+    mapsAuthFailed = true;
+    authFailureListeners.forEach((fn) => fn());
+  };
+
   mapsLoaderPromise = new Promise((resolve, reject) => {
-    (window as any).__initGoogleMaps = () => resolve((window as any).google);
+    const timer = setTimeout(() => reject(new Error('Map took too long to load')), 15000);
+    (window as any).__initGoogleMaps = () => {
+      clearTimeout(timer);
+      resolve((window as any).google);
+    };
     const s = document.createElement('script');
     const params = new URLSearchParams({
       key: GOOGLE_KEY,
@@ -37,11 +50,21 @@ function loadGoogleMaps(): Promise<typeof google> {
     s.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     s.async = true;
     s.defer = true;
-    s.onerror = () => reject(new Error('Failed to load Google Maps'));
+    s.onerror = () => {
+      clearTimeout(timer);
+      mapsLoaderPromise = null;
+      reject(new Error('Failed to load Google Maps'));
+    };
     document.head.appendChild(s);
   });
   return mapsLoaderPromise;
 }
+
+/** Resolves with the value, or `null` if the callback never fires in time. */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
+}
+
 
 interface Coord { lat: number; lng: number; name: string }
 
