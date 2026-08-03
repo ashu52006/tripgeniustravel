@@ -100,10 +100,27 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
         .join('/')}`
     : `https://www.google.com/maps/search/${encodeURIComponent(destinationName)}`;
 
+  // Surface Google key/domain rejections instead of spinning forever.
+  useEffect(() => {
+    const onFail = () => {
+      setError('This domain is not authorised for the Maps key yet');
+      setStatus('error');
+    };
+    if (mapsAuthFailed) onFail();
+    authFailureListeners.add(onFail);
+    return () => { authFailureListeners.delete(onFail); };
+  }, [attempt]);
+
   // Load map + geocode places
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
+    const watchdog = setTimeout(() => {
+      if (!cancelled) {
+        setStatus((s) => (s === 'loading' ? 'error' : s));
+        setError((e) => e || 'The map is taking longer than expected');
+      }
+    }, 20000);
 
     (async () => {
       try {
@@ -113,12 +130,15 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
         // Geocode destination first for centre
         const geocoder = new google.maps.Geocoder();
         const geocode = (q: string) =>
-          new Promise<google.maps.LatLng | null>((resolve) => {
-            geocoder.geocode({ address: q }, (res, s) => {
-              if (s === 'OK' && res?.[0]) resolve(res[0].geometry.location);
-              else resolve(null);
-            });
-          });
+          withTimeout(
+            new Promise<google.maps.LatLng | null>((resolve) => {
+              geocoder.geocode({ address: q }, (res, s) => {
+                if (s === 'OK' && res?.[0]) resolve(res[0].geometry.location);
+                else resolve(null);
+              });
+            }),
+            8000,
+          );
 
         const centerLoc = await geocode(destinationName);
         const map = new google.maps.Map(mapDivRef.current, {
@@ -170,10 +190,13 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
         }
 
         if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
+        clearTimeout(watchdog);
+        if (mapsAuthFailed) throw new Error('This domain is not authorised for the Maps key yet');
         setCoords(collected);
         setStatus('ready');
       } catch (e: any) {
         if (!cancelled) {
+          clearTimeout(watchdog);
           setError(e?.message ?? 'Failed to load map');
           setStatus('error');
         }
@@ -182,6 +205,7 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
 
     return () => {
       cancelled = true;
+      clearTimeout(watchdog);
       if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
     };
   }, [places.join('|'), destinationName, attempt]);
