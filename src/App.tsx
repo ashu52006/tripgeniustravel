@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import SharedTrip from "./pages/SharedTrip";
 import Policies from "./pages/Policies";
 import NotFound from "./pages/NotFound";
-import MapTest from "./pages/__MapTest";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +29,6 @@ const App = () => (
               <Route path="/cookies" element={<Policies kind="cookies" />} />
               <Route path="/about" element={<Policies kind="about" />} />
               <Route path="/contact" element={<Policies kind="contact" />} />
-              <Route path="/__maptest" element={<MapTest />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
