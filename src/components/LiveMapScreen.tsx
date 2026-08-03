@@ -301,9 +301,7 @@ function LiveMap({ places, destinationName }: { places: string[]; destinationNam
               }`}
             >
               <Locate className={`w-4 h-4 ${isTracking ? 'animate-pulse' : ''}`} />
-              <span className="hidden xs:inline sm:inline">
-                {geo.kind === 'prompting' ? 'Locating…' : isTracking ? 'Stop tracking' : 'Track me'}
-              </span>
+              <span>{geo.kind === 'prompting' ? 'Locating…' : isTracking ? 'Stop tracking' : 'Track me'}</span>
             </Button>
             <div className="absolute bottom-3 left-3 glass-strong rounded-xl px-3 py-2 text-[11px] sm:text-xs flex items-center gap-2">
               <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -382,16 +380,16 @@ export default function LiveMapScreen({ plan, userPlan, onUpgrade }: Props) {
   );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
       <div>
-        <h2 className="font-display text-2xl font-bold">Live Map & Tracking</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="font-display text-xl sm:text-2xl font-bold">Live Map &amp; Tracking</h2>
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Route through the day's stops. Tap <strong>Track me</strong> to follow your location live.
         </p>
       </div>
 
       {/* Day switcher */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 scrollbar-none">
         {plan.days.map((d) => (
           <button
             key={d.day}
@@ -419,7 +417,7 @@ export default function LiveMapScreen({ plan, userPlan, onUpgrade }: Props) {
             <Wallet className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold">Day {selectedDay} spend estimate</span>
           </div>
-          <span className="text-sm">
+          <span className="text-xs sm:text-sm">
             {plan.setup.homeCurrency}{spent.toLocaleString()} / {plan.setup.homeCurrency}{dayBudget.toLocaleString()}
           </span>
         </div>
