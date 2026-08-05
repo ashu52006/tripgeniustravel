@@ -1,47 +1,15 @@
 export interface PlanConfig {
   id: string;
   maxDays: number;
-  canExportPdf: boolean;
-  canEmailTrip: boolean;
   savedTripsLimit: number; // -1 = unlimited
-  allDaysUnlocked: boolean;
 }
 
+/** Soft limits per tier. Feature access itself lives in entitlements.ts. */
 export const planConfigs: Record<string, PlanConfig> = {
-  basic: {
-    id: 'basic',
-    maxDays: 15,
-    canExportPdf: true,
-    canEmailTrip: true,
-    savedTripsLimit: -1,
-    allDaysUnlocked: true,
-  },
-  silver: {
-    id: 'silver',
-    maxDays: 30,
-    canExportPdf: true,
-    canEmailTrip: true,
-    savedTripsLimit: -1,
-    allDaysUnlocked: true,
-  },
-  gold: {
-    id: 'gold',
-    maxDays: 60,
-    canExportPdf: true,
-    canEmailTrip: true,
-    savedTripsLimit: -1,
-    allDaysUnlocked: true,
-  },
-  platinum: {
-    id: 'platinum',
-    maxDays: 90,
-    canExportPdf: true,
-    canEmailTrip: true,
-    savedTripsLimit: -1,
-    allDaysUnlocked: true,
-  },
+  free: { id: 'free', maxDays: 15, savedTripsLimit: 3 },
+  pro: { id: 'pro', maxDays: 45, savedTripsLimit: -1 },
+  premium: { id: 'premium', maxDays: 90, savedTripsLimit: -1 },
+  enterprise: { id: 'enterprise', maxDays: 365, savedTripsLimit: -1 },
 };
 
-export const getPlanConfig = (planId: string): PlanConfig => {
-  return planConfigs[planId] || planConfigs.basic;
-};
+export const getPlanConfig = (planId: string): PlanConfig => planConfigs[planId] || planConfigs.free;
