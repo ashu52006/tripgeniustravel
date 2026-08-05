@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown, UserCog, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
