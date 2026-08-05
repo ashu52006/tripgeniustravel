@@ -26,6 +26,9 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/shared/:shareId" element={<SharedTrip />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/admin" element={<Admin />} />
+
               <Route path="/privacy" element={<Policies kind="privacy" />} />
               <Route path="/terms" element={<Policies kind="terms" />} />
               <Route path="/refund" element={<Policies kind="refund" />} />
