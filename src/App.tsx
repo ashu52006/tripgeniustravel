@@ -8,7 +8,10 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import SharedTrip from "./pages/SharedTrip";
 import Policies from "./pages/Policies";
+import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+
 
 const queryClient = new QueryClient();
 
