@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, LayoutDashboard, CalendarDays, Wallet, Download, Mail, Save, Share2, FolderOpen, Link2, Crown, UserCog, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LandingPage from '@/components/LandingPage';
 import RegionSelector from '@/components/RegionSelector';
@@ -232,6 +232,12 @@ const Index = () => {
                 <FolderOpen className="w-4 h-4" /> <span className="hidden sm:inline">My Trips</span>
               </Button>
             )}
+            {user && ['region','setup','plan'].includes(step) && (
+              <Button variant="ghost" size="sm" asChild className="gap-1">
+                <a href="/profile"><UserCog className="w-4 h-4" /> <span className="hidden sm:inline">Profile</span></a>
+              </Button>
+            )}
+
             {user && ['plan','region','setup'].includes(step) && (
               <Button variant="ghost" size="sm" onClick={() => setStep('subscribe')} className="gap-1 text-warning">
                 <Crown className="w-4 h-4" /> <span className="hidden sm:inline">Upgrade</span>

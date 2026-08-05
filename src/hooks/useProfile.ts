@@ -8,6 +8,20 @@ export interface Profile {
   notification_choice: string | null;
   show_name_to_companions: boolean;
   plan: string;
+  full_name: string | null;
+  phone: string | null;
+  home_city: string | null;
+  preferred_currency: string;
+  default_airport: string | null;
+  nationality: string | null;
+  visa_notes: string | null;
+  dietary_preferences: string[];
+  accessibility_needs: string[];
+  travel_interests: string[];
+  passport_number: string | null;
+  passport_expiry: string | null;
+  plan_seats: number;
+  intl_addon: boolean;
 }
 
 export function useProfile() {
@@ -24,15 +38,14 @@ export function useProfile() {
     setLoading(true);
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (data) {
-      setProfile(data as Profile);
+      setProfile(data as unknown as Profile);
     } else {
-      // Ensure row exists (trigger normally does this, but backfill for safety)
       const { data: inserted } = await supabase
         .from('profiles')
         .insert({ id: user.id })
         .select('*')
         .maybeSingle();
-      setProfile(inserted as Profile | null);
+      setProfile((inserted as unknown as Profile) ?? null);
     }
     setLoading(false);
   }, [user]);
@@ -44,13 +57,14 @@ export function useProfile() {
   const update = useCallback(
     async (patch: Partial<Omit<Profile, 'id'>>) => {
       if (!user) return;
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .update(patch)
+        .update(patch as never)
         .eq('id', user.id)
         .select('*')
         .maybeSingle();
-      if (data) setProfile(data as Profile);
+      if (error) throw error;
+      if (data) setProfile(data as unknown as Profile);
     },
     [user]
   );

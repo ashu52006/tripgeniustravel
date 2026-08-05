@@ -16,31 +16,73 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
+          accessibility_needs: string[]
           created_at: string
+          default_airport: string | null
+          dietary_preferences: string[]
+          full_name: string | null
           has_completed_onboarding: boolean
+          home_city: string | null
           id: string
+          intl_addon: boolean
+          nationality: string | null
           notification_choice: string | null
+          passport_expiry: string | null
+          passport_number: string | null
+          phone: string | null
           plan: string
+          plan_seats: number
+          preferred_currency: string
           show_name_to_companions: boolean
+          travel_interests: string[]
           updated_at: string
+          visa_notes: string | null
         }
         Insert: {
+          accessibility_needs?: string[]
           created_at?: string
+          default_airport?: string | null
+          dietary_preferences?: string[]
+          full_name?: string | null
           has_completed_onboarding?: boolean
+          home_city?: string | null
           id: string
+          intl_addon?: boolean
+          nationality?: string | null
           notification_choice?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          phone?: string | null
           plan?: string
+          plan_seats?: number
+          preferred_currency?: string
           show_name_to_companions?: boolean
+          travel_interests?: string[]
           updated_at?: string
+          visa_notes?: string | null
         }
         Update: {
+          accessibility_needs?: string[]
           created_at?: string
+          default_airport?: string | null
+          dietary_preferences?: string[]
+          full_name?: string | null
           has_completed_onboarding?: boolean
+          home_city?: string | null
           id?: string
+          intl_addon?: boolean
+          nationality?: string | null
           notification_choice?: string | null
+          passport_expiry?: string | null
+          passport_number?: string | null
+          phone?: string | null
           plan?: string
+          plan_seats?: number
+          preferred_currency?: string
           show_name_to_companions?: boolean
+          travel_interests?: string[]
           updated_at?: string
+          visa_notes?: string | null
         }
         Relationships: []
       }
@@ -125,6 +167,71 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          currency: string
+          id: string
+          label: string
+          spent_on: string
+          trip_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          label: string
+          spent_on?: string
+          trip_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          label?: string
+          spent_on?: string
+          trip_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_expenses_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -141,9 +248,16 @@ export type Database = {
           trip_name: string
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -270,6 +384,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
