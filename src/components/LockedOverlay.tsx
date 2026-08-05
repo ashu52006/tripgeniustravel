@@ -11,15 +11,20 @@ interface LockedOverlayProps {
   children?: React.ReactNode;
 }
 
-const featureCopy: Record<Feature, { title: string; description: string }> = {
-  fullItinerary: { title: 'Unlock Full Itinerary', description: 'See all days of your trip, not just Day 1.' },
+const featureCopy: Partial<Record<Feature, { title: string; description: string }>> = {
+  fullItinerary: { title: 'Unlock Full Itinerary', description: 'See every day of your trip, not just Day 1.' },
   liveMap: { title: 'Unlock Live Map & Expense Tracker', description: 'Real-time route, ETA and spend tracking.' },
   dayEditing: { title: 'Unlock Day Editing', description: 'Replace, add or remove any activity with auto de-duplication.' },
   buddyVisibility: { title: 'Unlock Travel Buddy Visibility', description: 'Let matched companions see your name and chat.' },
   unlimitedPdf: { title: 'Unlock Unlimited PDF Export', description: 'Export as often as you like on every trip.' },
   saveTrip: { title: 'Unlock Save Trip', description: 'Save unlimited trips to your library.' },
   shareTrip: { title: 'Unlock Trip Sharing', description: 'Generate a shareable public link.' },
+  expenseTracker: { title: 'Unlock Expense Tracker', description: 'Log spend per trip and track it against your budget.' },
+  groupSplit: { title: 'Unlock Group Expense Split', description: 'Split costs across travellers and settle up over UPI.' },
+  offlineAccess: { title: 'Unlock Offline Access', description: 'Keep your itinerary available without a connection.' },
 };
+
+const fallbackCopy = { title: 'Premium Feature', description: 'Upgrade your plan to unlock this.' };
 
 export default function LockedOverlay({
   feature,
@@ -29,7 +34,8 @@ export default function LockedOverlay({
   variant = 'overlay',
   children,
 }: LockedOverlayProps) {
-  const copy = featureCopy[feature];
+  const copy = featureCopy[feature] ?? fallbackCopy;
+
 
   if (variant === 'inline') {
     return (
