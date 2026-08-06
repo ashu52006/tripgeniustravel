@@ -14,6 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          item_key: string
+          item_type: Database["public"]["Enums"]["review_subject"]
+          title: string
+          wishlist_item_id: string | null
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          item_key: string
+          item_type: Database["public"]["Enums"]["review_subject"]
+          title: string
+          wishlist_item_id?: string | null
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          item_key?: string
+          item_type?: Database["public"]["Enums"]["review_subject"]
+          title?: string
+          wishlist_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_wishlist_item_id_fkey"
+            columns: ["wishlist_item_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_shared: boolean
+          name: string
+          share_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name: string
+          share_id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name?: string
+          share_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      expense_shares: {
+        Row: {
+          amount: number
+          created_at: string
+          expense_id: string
+          id: string
+          settled: boolean
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          expense_id: string
+          id?: string
+          settled?: boolean
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          expense_id?: string
+          id?: string
+          settled?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_shares_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "trip_expenses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           accessibility_needs: string[]
@@ -85,6 +252,251 @@ export type Database = {
           visa_notes?: string | null
         }
         Relationships: []
+      }
+      promo_codes: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          discount_flat: number | null
+          discount_percent: number | null
+          expires_at: string | null
+          id: string
+          max_uses: number | null
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          discount_flat?: number | null
+          discount_percent?: number | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          discount_flat?: number | null
+          discount_percent?: number | null
+          expires_at?: string | null
+          id?: string
+          max_uses?: number | null
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
+      promo_redemptions: {
+        Row: {
+          created_at: string
+          id: string
+          promo_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          promo_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          promo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_redemptions_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          referred_by: string | null
+          signups: number
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          id?: string
+          referred_by?: string | null
+          signups?: number
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          referred_by?: string | null
+          signups?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      review_reports: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          reporter_id: string
+          resolved: boolean
+          review_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_id: string
+          resolved?: boolean
+          review_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          resolved?: boolean
+          review_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_reports_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_votes: {
+        Row: {
+          created_at: string
+          id: string
+          review_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          review_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          review_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_votes_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          admin_reply: string | null
+          admin_reply_at: string | null
+          body: string
+          city: string | null
+          country: string | null
+          created_at: string
+          helpful_count: number
+          id: string
+          is_verified: boolean
+          photo_urls: string[]
+          rating: number
+          status: Database["public"]["Enums"]["review_status"]
+          subject_key: string
+          subject_name: string
+          subject_type: Database["public"]["Enums"]["review_subject"]
+          title: string | null
+          traveler_type: Database["public"]["Enums"]["traveler_type"] | null
+          trip_id: string | null
+          updated_at: string
+          user_id: string
+          video_urls: string[]
+        }
+        Insert: {
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          body: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          is_verified?: boolean
+          photo_urls?: string[]
+          rating: number
+          status?: Database["public"]["Enums"]["review_status"]
+          subject_key: string
+          subject_name: string
+          subject_type: Database["public"]["Enums"]["review_subject"]
+          title?: string | null
+          traveler_type?: Database["public"]["Enums"]["traveler_type"] | null
+          trip_id?: string | null
+          updated_at?: string
+          user_id: string
+          video_urls?: string[]
+        }
+        Update: {
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          body?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          helpful_count?: number
+          id?: string
+          is_verified?: boolean
+          photo_urls?: string[]
+          rating?: number
+          status?: Database["public"]["Enums"]["review_status"]
+          subject_key?: string
+          subject_name?: string
+          subject_type?: Database["public"]["Enums"]["review_subject"]
+          title?: string | null
+          traveler_type?: Database["public"]["Enums"]["traveler_type"] | null
+          trip_id?: string | null
+          updated_at?: string
+          user_id?: string
+          video_urls?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_trips: {
         Row: {
@@ -167,6 +579,74 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ticket_messages: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          is_admin: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_admin?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trip_expenses: {
         Row: {
           amount: number
@@ -211,6 +691,181 @@ export type Database = {
           },
         ]
       }
+      trip_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["trip_member_role"]
+          token: string
+          trip_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["trip_member_role"]
+          token?: string
+          trip_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["trip_member_role"]
+          token?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_invites_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["trip_member_role"]
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["trip_member_role"]
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["trip_member_role"]
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_members_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          trip_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          trip_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          trip_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_messages_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_vote_ballots: {
+        Row: {
+          created_at: string
+          id: string
+          option_index: number
+          user_id: string
+          vote_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_index: number
+          user_id: string
+          vote_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_index?: number
+          user_id?: string
+          vote_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_vote_ballots_vote_id_fkey"
+            columns: ["vote_id"]
+            isOneToOne: false
+            referencedRelation: "trip_votes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_votes: {
+        Row: {
+          closed: boolean
+          created_at: string
+          created_by: string
+          id: string
+          options: string[]
+          question: string
+          trip_id: string
+        }
+        Insert: {
+          closed?: boolean
+          created_at?: string
+          created_by: string
+          id?: string
+          options: string[]
+          question: string
+          trip_id: string
+        }
+        Update: {
+          closed?: boolean
+          created_at?: string
+          created_by?: string
+          id?: string
+          options?: string[]
+          question?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_votes_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "saved_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -232,11 +887,99 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          description: string
+          id: string
+          kind: Database["public"]["Enums"]["wallet_kind"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          description: string
+          id?: string
+          kind?: Database["public"]["Enums"]["wallet_kind"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          description?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["wallet_kind"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wishlist_items: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          currency: string
+          id: string
+          image_url: string | null
+          item_key: string
+          item_type: Database["public"]["Enums"]["review_subject"]
+          metadata: Json
+          price_estimate: number | null
+          subtitle: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          image_url?: string | null
+          item_key: string
+          item_type: Database["public"]["Enums"]["review_subject"]
+          metadata?: Json
+          price_estimate?: number | null
+          subtitle?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          image_url?: string | null
+          item_key?: string
+          item_type?: Database["public"]["Enums"]["review_subject"]
+          metadata?: Json
+          price_estimate?: number | null
+          subtitle?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_trip_invite: { Args: { _token: string }; Returns: string }
+      get_shared_collection: {
+        Args: { _share_id: string }
+        Returns: {
+          cover_url: string
+          description: string
+          items: Json
+          name: string
+        }[]
+      }
       get_shared_trip: {
         Args: { _share_id: string }
         Returns: {
@@ -255,9 +998,28 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_trip_member: {
+        Args: { _trip_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_trip_owner: {
+        Args: { _trip_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      review_status: "published" | "hidden" | "removed"
+      review_subject:
+        | "hotel"
+        | "flight"
+        | "activity"
+        | "destination"
+        | "restaurant"
+      ticket_status: "open" | "pending" | "resolved" | "closed"
+      traveler_type: "solo" | "couple" | "family" | "business"
+      trip_member_role: "owner" | "editor" | "viewer"
+      wallet_kind: "wallet" | "points" | "cashback" | "referral"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -386,6 +1148,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      review_status: ["published", "hidden", "removed"],
+      review_subject: [
+        "hotel",
+        "flight",
+        "activity",
+        "destination",
+        "restaurant",
+      ],
+      ticket_status: ["open", "pending", "resolved", "closed"],
+      traveler_type: ["solo", "couple", "family", "business"],
+      trip_member_role: ["owner", "editor", "viewer"],
+      wallet_kind: ["wallet", "points", "cashback", "referral"],
     },
   },
 } as const

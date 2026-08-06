@@ -10,6 +10,9 @@ import SharedTrip from "./pages/SharedTrip";
 import Policies from "./pages/Policies";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import Wishlist from "./pages/Wishlist";
+import Reviews from "./pages/Reviews";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 
 
@@ -28,6 +31,9 @@ const App = () => (
               <Route path="/shared/:shareId" element={<SharedTrip />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/reviews" element={<Reviews />} />
+              <Route path="/wallet" element={<Wallet />} />
 
               <Route path="/privacy" element={<Policies kind="privacy" />} />
               <Route path="/terms" element={<Policies kind="terms" />} />
