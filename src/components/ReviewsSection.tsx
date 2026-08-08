@@ -249,6 +249,12 @@ export default function ReviewsSection({ subjectType, subjectKey, subjectName, c
         </div>
       </div>
 
+      {!user && !compact && (
+        <div className="glass rounded-2xl p-4 text-sm text-muted-foreground">
+          Sign in to write a review for {subjectName}.
+        </div>
+      )}
+
       {user && !compact && (
         <div className="glass rounded-2xl p-4 space-y-3">
           <div className="flex items-center justify-between">
