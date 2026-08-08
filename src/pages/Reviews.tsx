@@ -61,13 +61,52 @@ export default function Reviews() {
           <p className="text-muted-foreground text-sm mt-1">Honest ratings from real trips — hotels, flights, activities, restaurants and destinations.</p>
         </header>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a hotel, city or activity" className="w-64" />
           <select className="h-10 rounded-lg border border-input bg-background px-3 text-sm" value={type} onChange={(e) => setType(e.target.value as SubjectType | 'all')}>
             <option value="all">All categories</option>
             {Object.entries(SUBJECT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
+          <Button className="rounded-xl gap-2 ml-auto" onClick={() => setComposing((c) => !c)}>
+            <PenLine className="w-4 h-4" /> Write a review
+          </Button>
         </div>
+
+        {composing && (
+          <div className="glass rounded-2xl p-4 space-y-3">
+            <p className="text-sm font-semibold">What are you reviewing?</p>
+            <div className="grid sm:grid-cols-3 gap-2">
+              <select
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as SubjectType)}
+              >
+                {Object.entries(SUBJECT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+              <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name (e.g. Taj Palace)" maxLength={120} />
+              <Input value={newCity} onChange={(e) => setNewCity(e.target.value)} placeholder="City (optional)" maxLength={80} />
+            </div>
+            <Button
+              className="rounded-xl"
+              disabled={newName.trim().length < 2}
+              onClick={() => {
+                const name = newName.trim();
+                setSelected({
+                  subject_type: newType,
+                  subject_key: `${newType}:${name.toLowerCase().replace(/\s+/g, '-')}`,
+                  subject_name: name,
+                  city: newCity.trim() || null,
+                  rating: 0,
+                });
+                setComposing(false);
+                setNewName('');
+                setNewCity('');
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        )}
 
         {selected ? (
           <div className="space-y-4">
