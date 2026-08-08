@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star, ShieldCheck, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star, ShieldCheck, Zap, Headphones, MessageSquareText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeroCarousel from './HeroCarousel';
 import SampleTripsSection from './SampleTripsSection';
@@ -217,6 +218,27 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
             ))}
           </div>
         </div>
+
+        <section className="border-y border-border/50 bg-card/30">
+          <div className="max-w-5xl mx-auto px-4 py-12 grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-2">
+                <Headphones className="w-5 h-5" />
+                <span className="text-sm font-semibold">Customer care</span>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-display font-bold text-foreground">Need help before or during your trip?</h2>
+              <p className="mt-2 text-muted-foreground max-w-2xl">Reach the TripGenius support team, browse traveller feedback, or share your own experience.</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button asChild variant="outline" className="gap-2 rounded-xl">
+                <Link to="/reviews"><MessageSquareText className="w-4 h-4" /> Customer reviews</Link>
+              </Button>
+              <Button asChild className="gap-2 rounded-xl">
+                <Link to="/contact"><Headphones className="w-4 h-4" /> Get support</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
       </div>
 
       <Footer />
