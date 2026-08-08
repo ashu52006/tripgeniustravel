@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="relative z-10 mt-20 border-t border-border/50 bg-card/40 backdrop-blur-xl">
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-xl bg-gradient-hero flex items-center justify-center shadow-glow">
@@ -32,10 +32,21 @@ export default function Footer() {
           </div>
 
           <div>
+            <h4 className="font-semibold text-foreground mb-3 text-sm">Explore</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link to="/reviews" className="hover:text-primary transition-colors">Traveller reviews</Link></li>
+              <li><Link to="/wishlist" className="hover:text-primary transition-colors">Wishlist</Link></li>
+              <li><Link to="/wallet" className="hover:text-primary transition-colors">Wallet & rewards</Link></li>
+              <li><Link to="/profile" className="hover:text-primary transition-colors">Travel profile</Link></li>
+            </ul>
+          </div>
+
+          <div>
             <h4 className="font-semibold text-foreground mb-3 text-sm">Company</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/about" className="hover:text-primary transition-colors">About us</Link></li>
-              <li><Link to="/contact" className="hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link to="/contact" className="hover:text-primary transition-colors">Customer support</Link></li>
+              <li><Link to="/admin" className="hover:text-primary transition-colors">Admin console</Link></li>
               <li><a href="mailto:support@tripgenius.ai" className="hover:text-primary transition-colors">Careers</a></li>
             </ul>
           </div>
