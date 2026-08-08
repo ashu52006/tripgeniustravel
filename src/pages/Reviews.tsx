@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Star } from 'lucide-react';
+import { ArrowLeft, Star, PenLine } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useSeo } from '@/hooks/useSeo';
 import ReviewsSection, { SUBJECT_LABELS, Stars, type SubjectType } from '@/components/ReviewsSection';
@@ -19,6 +20,10 @@ export default function Reviews() {
   const [q, setQ] = useState('');
   const [type, setType] = useState<SubjectType | 'all'>('all');
   const [selected, setSelected] = useState<SubjectRow | null>(null);
+  const [composing, setComposing] = useState(false);
+  const [newType, setNewType] = useState<SubjectType>('hotel');
+  const [newName, setNewName] = useState('');
+  const [newCity, setNewCity] = useState('');
 
   useSeo({
     title: 'Traveller Reviews & Ratings | TripGenius',
