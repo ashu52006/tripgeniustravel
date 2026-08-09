@@ -29,6 +29,15 @@ interface AdminTrip {
   created_at: string;
 }
 
+interface AdminReview {
+  id: string;
+  rating: number;
+  body: string;
+  status: string;
+  photo_urls: string[];
+  created_at: string;
+}
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
