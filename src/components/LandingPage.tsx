@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { APP_REVIEW } from '@/lib/appReview';
 import { Link } from 'react-router-dom';
 import { Plane, Globe, MapPin, Sparkles, ArrowRight, Star, ShieldCheck, Zap, Headphones, MessageSquareText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,17 +17,56 @@ interface LandingPageProps {
   onPlanFromSample?: (trip: SampleTrip) => void;
 }
 
+interface DisplayReview {
+  name: string;
+  location: string;
+  comment: string;
+  rating: number;
+  photos: string[];
+}
+
 export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingPageProps) {
   const { t } = useLanguage();
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [appReviews, setAppReviews] = useState<DisplayReview[]>([]);
+
+  // Real app reviews written by travellers inside the app
+  useEffect(() => {
+    supabase
+      .from('reviews')
+      .select('rating, body, title, photo_urls, created_at')
+      .eq('subject_key', APP_REVIEW.subjectKey)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        setAppReviews(
+          ((data as { rating: number; body: string; photo_urls: string[] | null }[]) ?? []).map((r) => ({
+            name: 'TripGenius traveller',
+            location: 'Verified app user',
+            comment: r.body,
+            rating: r.rating,
+            photos: r.photo_urls ?? [],
+          })),
+        );
+      });
+  }, []);
+
+  const allReviews: DisplayReview[] = useMemo(
+    () => [
+      ...appReviews,
+      ...reviews.map((r) => ({ name: r.name, location: r.location, comment: r.comment, rating: 5, photos: [] as string[] })),
+    ],
+    [appReviews],
+  );
 
   // Auto-rotate reviews
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
+      setCurrentReviewIndex((prev) => (prev + 1) % allReviews.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [allReviews.length]);
 
   const features = [
     { icon: <Sparkles className="w-6 h-6" />, title: 'AI-Powered Plans', desc: 'Smart itineraries tailored to your style' },
@@ -36,8 +77,9 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
 
   // Show 3 reviews at a time
   const visibleReviews = [0, 1, 2].map(
-    (offset) => reviews[(currentReviewIndex + offset) % reviews.length]
+    (offset) => allReviews[(currentReviewIndex + offset) % allReviews.length]
   );
+
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -151,7 +193,7 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
               Loved by Travelers Worldwide
             </h2>
             <p className="text-muted-foreground text-center mb-8">
-              {reviews.length}+ happy travelers and counting
+              {allReviews.length}+ happy travelers and counting
             </p>
 
             {/* Rotating review cards */}
@@ -167,18 +209,29 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
                 >
                   <div className="flex gap-0.5 mb-3">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-warning text-warning" />
+                      <Star
+                        key={j}
+                        className={`w-4 h-4 ${j < review.rating ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`}
+                      />
                     ))}
                   </div>
                   <p className="text-foreground text-sm italic mb-3 leading-relaxed">
                     "{review.comment}"
                   </p>
+                  {review.photos.length > 0 && (
+                    <div className="flex gap-2 mb-3 overflow-x-auto">
+                      {review.photos.slice(0, 3).map((p) => (
+                        <img key={p} src={p} alt="Traveller photo shared in a TripGenius app review" loading="lazy" className="h-16 w-20 object-cover rounded-lg flex-shrink-0" />
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground font-medium">
                     — {review.name}, {review.location}
                   </p>
                 </motion.div>
               ))}
             </div>
+
 
             {/* Dot indicators */}
             <div className="flex justify-center gap-1.5">

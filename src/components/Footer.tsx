@@ -46,7 +46,7 @@ export default function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link to="/about" className="hover:text-primary transition-colors">About us</Link></li>
               <li><Link to="/contact" className="hover:text-primary transition-colors">Customer support</Link></li>
-              <li><Link to="/admin" className="hover:text-primary transition-colors">Admin console</Link></li>
+              <li><Link to="/admin-login" className="hover:text-primary transition-colors">Admin console</Link></li>
               <li><a href="mailto:support@tripgenius.ai" className="hover:text-primary transition-colors">Careers</a></li>
             </ul>
           </div>

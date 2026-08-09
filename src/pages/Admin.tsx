@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { PLANS, normalizePlan } from '@/lib/entitlements';
 import { useSeo } from '@/hooks/useSeo';
+import { APP_REVIEW } from '@/lib/appReview';
 import { toast } from 'sonner';
 
 interface AdminProfile {
@@ -29,6 +30,15 @@ interface AdminTrip {
   created_at: string;
 }
 
+interface AdminReview {
+  id: string;
+  rating: number;
+  body: string;
+  status: string;
+  photo_urls: string[];
+  created_at: string;
+}
+
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useIsAdmin();
@@ -38,6 +48,8 @@ export default function Admin() {
   const [trips, setTrips] = useState<AdminTrip[]>([]);
   const [admins, setAdmins] = useState<string[]>([]);
   const [expenseTotal, setExpenseTotal] = useState(0);
+  const [appReviews, setAppReviews] = useState<AdminReview[]>([]);
+  const [newPassword, setNewPassword] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -48,17 +60,44 @@ export default function Admin() {
   }, [authLoading, user, navigate]);
 
   const loadAll = async () => {
-    const [p, t, r, e] = await Promise.all([
+    const [p, t, r, e, ar] = await Promise.all([
       supabase.from('profiles').select('id, full_name, phone, home_city, plan, created_at').order('created_at', { ascending: false }),
       supabase.from('saved_trips').select('id, user_id, trip_name, origin, destination, days, created_at').order('created_at', { ascending: false }).limit(100),
       supabase.from('user_roles').select('user_id, role').eq('role', 'admin' as never),
       supabase.from('trip_expenses').select('amount'),
+      supabase.from('reviews').select('id, rating, body, status, photo_urls, created_at').eq('subject_key', APP_REVIEW.subjectKey).order('created_at', { ascending: false }).limit(100),
     ]);
     setProfiles((p.data as unknown as AdminProfile[]) ?? []);
     setTrips((t.data as unknown as AdminTrip[]) ?? []);
     setAdmins(((r.data as any[]) ?? []).map((x) => x.user_id));
     setExpenseTotal(((e.data as any[]) ?? []).reduce((s, x) => s + Number(x.amount || 0), 0));
+    setAppReviews((ar.data as unknown as AdminReview[]) ?? []);
   };
+
+  const setReviewStatus = async (id: string, status: 'published' | 'hidden') => {
+    const { error } = await supabase.from('reviews').update({ status } as never).eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success(status === 'hidden' ? 'Review hidden' : 'Review published');
+    loadAll();
+  };
+
+  const deleteReview = async (id: string) => {
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success('Review deleted');
+    loadAll();
+  };
+
+  const changePassword = async () => {
+    if (newPassword.length < 8) return toast.error('Use at least 8 characters');
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    setNewPassword('');
+    toast.success('Admin password updated');
+  };
+
 
   useEffect(() => {
     if (isAdmin) loadAll();
@@ -148,6 +187,56 @@ export default function Admin() {
             </div>
           ))}
         </div>
+
+        <section className="glass rounded-2xl p-5 space-y-4">
+          <h2 className="font-display font-bold">App reviews</h2>
+          {appReviews.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No app reviews yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {appReviews.map((r) => (
+                <li key={r.id} className="rounded-xl border border-border/60 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold">{r.rating}★</span>
+                    <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${r.status === 'published' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'}`}>{r.status}</span>
+                  </div>
+                  <p className="text-sm whitespace-pre-wrap">{r.body}</p>
+                  {r.photo_urls?.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto">
+                      {r.photo_urls.map((u) => (
+                        <img key={u} src={u} alt="Traveller app review photo" loading="lazy" className="h-16 w-24 object-cover rounded-lg" />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setReviewStatus(r.id, r.status === 'published' ? 'hidden' : 'published')}>
+                      {r.status === 'published' ? 'Hide' : 'Publish'}
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8 text-xs text-destructive" onClick={() => deleteReview(r.id)}>Delete</Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="glass rounded-2xl p-5 space-y-3">
+          <h2 className="font-display font-bold">Admin password</h2>
+          <p className="text-xs text-muted-foreground">Change the password for the account you are signed in with.</p>
+          <div className="flex flex-wrap gap-2">
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="New password"
+              className="w-64"
+            />
+            <Button className="rounded-xl" disabled={busy || !newPassword} onClick={changePassword}>Update password</Button>
+          </div>
+        </section>
+
+
 
         <section className="glass rounded-2xl p-5 space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
