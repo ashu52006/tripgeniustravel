@@ -193,7 +193,7 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
               Loved by Travelers Worldwide
             </h2>
             <p className="text-muted-foreground text-center mb-8">
-              {reviews.length}+ happy travelers and counting
+              {allReviews.length}+ happy travelers and counting
             </p>
 
             {/* Rotating review cards */}
@@ -209,18 +209,29 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
                 >
                   <div className="flex gap-0.5 mb-3">
                     {[...Array(5)].map((_, j) => (
-                      <Star key={j} className="w-4 h-4 fill-warning text-warning" />
+                      <Star
+                        key={j}
+                        className={`w-4 h-4 ${j < review.rating ? 'fill-warning text-warning' : 'text-muted-foreground/30'}`}
+                      />
                     ))}
                   </div>
                   <p className="text-foreground text-sm italic mb-3 leading-relaxed">
                     "{review.comment}"
                   </p>
+                  {review.photos.length > 0 && (
+                    <div className="flex gap-2 mb-3 overflow-x-auto">
+                      {review.photos.slice(0, 3).map((p) => (
+                        <img key={p} src={p} alt="Traveller photo shared in a TripGenius app review" loading="lazy" className="h-16 w-20 object-cover rounded-lg flex-shrink-0" />
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs text-muted-foreground font-medium">
                     — {review.name}, {review.location}
                   </p>
                 </motion.div>
               ))}
             </div>
+
 
             {/* Dot indicators */}
             <div className="flex justify-center gap-1.5">
