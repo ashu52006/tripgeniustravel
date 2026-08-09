@@ -46,6 +46,7 @@ const App = () => (
               <Route path="/contact" element={<Policies kind="contact" />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <AppReviewPrompt />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
