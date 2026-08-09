@@ -33,6 +33,7 @@ const App = () => (
               <Route path="/shared/:shareId" element={<SharedTrip />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/reviews" element={<Reviews />} />
               <Route path="/wallet" element={<Wallet />} />
