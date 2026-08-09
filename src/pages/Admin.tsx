@@ -38,6 +38,8 @@ export default function Admin() {
   const [trips, setTrips] = useState<AdminTrip[]>([]);
   const [admins, setAdmins] = useState<string[]>([]);
   const [expenseTotal, setExpenseTotal] = useState(0);
+  const [appReviews, setAppReviews] = useState<AdminReview[]>([]);
+  const [newPassword, setNewPassword] = useState('');
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
 
