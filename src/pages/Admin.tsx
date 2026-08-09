@@ -59,17 +59,44 @@ export default function Admin() {
   }, [authLoading, user, navigate]);
 
   const loadAll = async () => {
-    const [p, t, r, e] = await Promise.all([
+    const [p, t, r, e, ar] = await Promise.all([
       supabase.from('profiles').select('id, full_name, phone, home_city, plan, created_at').order('created_at', { ascending: false }),
       supabase.from('saved_trips').select('id, user_id, trip_name, origin, destination, days, created_at').order('created_at', { ascending: false }).limit(100),
       supabase.from('user_roles').select('user_id, role').eq('role', 'admin' as never),
       supabase.from('trip_expenses').select('amount'),
+      supabase.from('reviews').select('id, rating, body, status, photo_urls, created_at').eq('subject_key', APP_REVIEW.subjectKey).order('created_at', { ascending: false }).limit(100),
     ]);
     setProfiles((p.data as unknown as AdminProfile[]) ?? []);
     setTrips((t.data as unknown as AdminTrip[]) ?? []);
     setAdmins(((r.data as any[]) ?? []).map((x) => x.user_id));
     setExpenseTotal(((e.data as any[]) ?? []).reduce((s, x) => s + Number(x.amount || 0), 0));
+    setAppReviews((ar.data as unknown as AdminReview[]) ?? []);
   };
+
+  const setReviewStatus = async (id: string, status: 'published' | 'hidden') => {
+    const { error } = await supabase.from('reviews').update({ status } as never).eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success(status === 'hidden' ? 'Review hidden' : 'Review published');
+    loadAll();
+  };
+
+  const deleteReview = async (id: string) => {
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (error) return toast.error(error.message);
+    toast.success('Review deleted');
+    loadAll();
+  };
+
+  const changePassword = async () => {
+    if (newPassword.length < 8) return toast.error('Use at least 8 characters');
+    setBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    setNewPassword('');
+    toast.success('Admin password updated');
+  };
+
 
   useEffect(() => {
     if (isAdmin) loadAll();
