@@ -10,6 +10,8 @@ import SharedTrip from "./pages/SharedTrip";
 import Policies from "./pages/Policies";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
+import AppReviewPrompt from "./components/AppReviewPrompt";
 import Wishlist from "./pages/Wishlist";
 import Reviews from "./pages/Reviews";
 import Wallet from "./pages/Wallet";
