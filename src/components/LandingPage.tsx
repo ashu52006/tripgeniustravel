@@ -15,17 +15,56 @@ interface LandingPageProps {
   onPlanFromSample?: (trip: SampleTrip) => void;
 }
 
+interface DisplayReview {
+  name: string;
+  location: string;
+  comment: string;
+  rating: number;
+  photos: string[];
+}
+
 export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingPageProps) {
   const { t } = useLanguage();
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [appReviews, setAppReviews] = useState<DisplayReview[]>([]);
+
+  // Real app reviews written by travellers inside the app
+  useEffect(() => {
+    supabase
+      .from('reviews')
+      .select('rating, body, title, photo_urls, created_at')
+      .eq('subject_key', APP_REVIEW.subjectKey)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        setAppReviews(
+          ((data as { rating: number; body: string; photo_urls: string[] | null }[]) ?? []).map((r) => ({
+            name: 'TripGenius traveller',
+            location: 'Verified app user',
+            comment: r.body,
+            rating: r.rating,
+            photos: r.photo_urls ?? [],
+          })),
+        );
+      });
+  }, []);
+
+  const allReviews: DisplayReview[] = useMemo(
+    () => [
+      ...appReviews,
+      ...reviews.map((r) => ({ name: r.name, location: r.location, comment: r.comment, rating: 5, photos: [] as string[] })),
+    ],
+    [appReviews],
+  );
 
   // Auto-rotate reviews
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentReviewIndex((prev) => (prev + 1) % reviews.length);
+      setCurrentReviewIndex((prev) => (prev + 1) % allReviews.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [allReviews.length]);
 
   const features = [
     { icon: <Sparkles className="w-6 h-6" />, title: 'AI-Powered Plans', desc: 'Smart itineraries tailored to your style' },
@@ -36,8 +75,9 @@ export default function LandingPage({ onGetStarted, onPlanFromSample }: LandingP
 
   // Show 3 reviews at a time
   const visibleReviews = [0, 1, 2].map(
-    (offset) => reviews[(currentReviewIndex + offset) % reviews.length]
+    (offset) => allReviews[(currentReviewIndex + offset) % allReviews.length]
   );
+
 
   return (
     <div className="relative min-h-screen overflow-hidden">
