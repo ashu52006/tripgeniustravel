@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { PLANS, normalizePlan } from '@/lib/entitlements';
 import { useSeo } from '@/hooks/useSeo';
+import { APP_REVIEW } from '@/lib/appReview';
 import { toast } from 'sonner';
 
 interface AdminProfile {
